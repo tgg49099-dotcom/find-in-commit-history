@@ -22,6 +22,10 @@ holds the source, the tests and the build recipe.
 * **Regular expressions** — match the diff itself, with `git log -G` semantics.
 * **Filter by path** — restrict the search to the files you care about. Binary
   files are ignored.
+* **Works in a linked worktree** — in a worktree created by `git worktree add`,
+  the `.git` of the working directory is a *file*, and the references live in the
+  common repository. The plugin opens the common repository and declares the
+  work tree, so the search returns the same commits as `git log -S` there.
 * **Local only** — the history is read from the repository on disk. Nothing is
   sent anywhere, no account, no network access.
 
@@ -113,6 +117,7 @@ scripts/run_tests.sh                        compile + run the tests, no IDE
 scripts/compare_with_git.sh                 compare the engine with the real git log
 scripts/contre_epreuve.py                   red proof (mutation of a copy)
 scripts/preuve_moteur_zip.sh                run the engine contained in the built ZIP
+scripts/preuve_worktree_zip.sh              same, inside a real linked worktree
 ```
 
 ## Why JGit is bundled
@@ -134,7 +139,8 @@ which has nothing to do with version control. JGit is therefore bundled, in the
 
 * The UI is a **modal dialog**: there is no clickable results panel and no
   integrated diff yet.
-* The **Enter** key does not start the search — click *Search*.
+* The search runs on a background thread (the IDE never freezes), but the
+  progress of a very large repository is not detailed.
 * The plugin has been verified on **PyCharm 2026.2.4**; it has not been tested on
   IntelliJ IDEA (it only uses `com.intellij.modules.platform`, so nothing in the
   code is PyCharm-specific).

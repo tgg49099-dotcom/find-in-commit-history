@@ -30,13 +30,19 @@
     your Git history — the <code>git log -S</code> / <code>git log -G</code>
     ("pickaxe") search, inside your IDE.</p>
     <ul>
-      <li>Type a string, get the commits that added or removed it, most recent
-      first — even if the string no longer exists in your working tree.</li>
-      <li>Match the diff itself with a regular expression
-      (<code>git log -G</code> semantics).</li>
-      <li>Restrict the search to a path; binary files are ignored.</li>
-      <li>The history is read locally from the repository on disk — nothing is
-      sent anywhere.</li>
+      <li>Type a string, get the commits that added or removed it (a change in
+      the <em>number</em> of occurrences counts), most recent first, across
+      every reference of the repository — not only the current branch — even if
+      the string no longer exists in your working tree. The search stops after
+      500 matching commits.</li>
+      <li>Match the diff itself with a regular expression: added <em>and</em>
+      removed lines are tested, like <code>git log -G</code> (Java regular
+      expressions; merge commits are diffed against their first parent).</li>
+      <li>Restrict the search to the files you care about: the path filter is
+      a regular expression matched anywhere in the path. Binary files are
+      ignored.</li>
+      <li>The history is read locally from the repository on disk — the plugin
+      makes no network access at runtime, no account, no telemetry.</li>
     </ul>
   ]]></change-notes>
 

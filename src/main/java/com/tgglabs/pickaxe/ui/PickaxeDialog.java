@@ -1,5 +1,10 @@
 package com.tgglabs.pickaxe.ui;
 
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ModalityState;
+import com.intellij.openapi.progress.ProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.DialogWrapper;
@@ -7,14 +12,14 @@ import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTextField;
+import com.tgglabs.pickaxe.GitRepositoryLocator;
 import com.tgglabs.pickaxe.engine.PickaxeEngine;
 import com.tgglabs.pickaxe.engine.PickaxeException;
 import com.tgglabs.pickaxe.engine.PickaxeHit;
 import com.tgglabs.pickaxe.engine.PickaxeMode;
 import com.tgglabs.pickaxe.engine.PickaxeQuery;
-import org.eclipse.jgit.lib.Constants;
+import com.tgglabs.pickaxe.engine.PickaxeRepository;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,9 +46,15 @@ import java.util.List;
  *
  * <p>Regle de robustesse : un champ vide ne doit jamais declencher une
  * exception — le dialogue affiche un message et ne lance rien.</p>
+ *
+ * <p>Regle de fluidite : la recherche ne doit jamais tourner sur le thread
+ * EDT (celui de Swing). Sur un gros depot elle gelerait l'IDE. Elle est donc
+ * confiee a une tache de fond, et son resultat est applique au modele dans
+ * {@code invokeLater} (donc sur l'EDT).</p>
  */
 public class PickaxeDialog extends DialogWrapper {
 
+    private final Project project;
     private final Path repositoryRoot;
 
     private final JBTextField needleField = new JBTextField();
@@ -55,6 +66,7 @@ public class PickaxeDialog extends DialogWrapper {
 
     public PickaxeDialog(@Nullable Project project, @NotNull Path repositoryRoot) {
         super(project, false);
+        this.project = project;
         this.repositoryRoot = repositoryRoot;
         setTitle("Find in Commit History");
         init();
@@ -109,13 +121,28 @@ public class PickaxeDialog extends DialogWrapper {
 
     @Override
     protected Action @NotNull [] createActions() {
-        return new Action[]{new SearchAction(), getCancelAction()};
+        return new Action[]{getOKAction(), getCancelAction()};
+    }
+
+    /**
+     * L'action OK par defaut de {@link DialogWrapper} ferme le dialogue : la
+     * touche ENTRÉE ne lancierait alors rien. On la remplace par l'action de
+     * RECHERCHE : ENTRÉE lance donc exactement la meme recherche qu'un clic
+     * sur « Search », et le dialogue reste ouvert pour afficher les resultats.
+     */
+    @Override
+    protected void createDefaultActions() {
+        super.createDefaultActions();
+        myOKAction = new SearchAction();
     }
 
     /** Bouton « Search » : lance la recherche et garde le dialogue ouvert. */
     private class SearchAction extends AbstractAction {
         SearchAction() {
             super("Search");
+            // « DefaultAction » est la clef que la plateforme regarde pour
+            // designer le bouton touche par la touche ENTRÉE.
+            putValue(DialogWrapper.DEFAULT_ACTION, Boolean.TRUE);
         }
 
         @Override
@@ -124,43 +151,92 @@ public class PickaxeDialog extends DialogWrapper {
         }
     }
 
-    /** Lance la recherche. Ne leve jamais d'exception vers l'IDE. */
+    /**
+     * Lance la recherche.
+     *
+     * <p>La lecture du depot est faite par une tache de fond
+     * ({@link Task.Backgroundable}) : l'EDT reste libre, l'IDE ne gele pas,
+     * et la tache affiche sa progression et peut etre annulee. Le resultat est
+     * applique au modele dans {@code invokeLater}, donc sur l'EDT.</p>
+     *
+     * <p>Ne leve jamais d'exception vers l'IDE.</p>
+     */
     private void runSearch() {
-        String needle = needleField.getText();
+        final String needle = needleField.getText();
         if (needle == null || needle.trim().isEmpty()) {
             setStatus(PickaxeQuery.EMPTY_NEEDLE_MESSAGE, true);
             return;
         }
+        // Les champs Swing sont lus ICI, sur l'EDT : un thread de fond n'a
+        // pas le droit de les toucher.
+        final PickaxeMode mode = (PickaxeMode) modeCombo.getSelectedItem();
+        final String pathFilter = pathField.getText();
+        // Modalite capturee sur l'EDT : le resultat sera applique dans le meme
+        // etat de modalite (ce dialogue est modal).
+        final ModalityState modality = ModalityState.defaultModalityState();
+
         setStatus("Searching…", false);
-        try {
-            List<PickaxeHit> hits = search(needle);
-            DefaultListModel<String> model = new DefaultListModel<>();
-            for (PickaxeHit hit : hits) {
-                model.addElement(hit.getShortId() + "  " + hit.getSubject()
-                        + (hit.getPaths().isEmpty() ? "" : "  [" + String.join(", ", hit.getPaths()) + "]"));
+        ProgressManager.getInstance().run(new Task.Backgroundable(
+                project, "Searching Git history", true) {
+            @Override
+            public void run(@NotNull ProgressIndicator indicator) {
+                indicator.setIndeterminate(true);
+                final List<PickaxeHit> hits;
+                try {
+                    hits = search(needle, mode, pathFilter);
+                } catch (PickaxeException ex) {
+                    final String message = ex.getMessage() == null ? "Search failed." : ex.getMessage();
+                    ApplicationManager.getApplication().invokeLater(() -> setStatus(message, true), modality);
+                    return;
+                } catch (RuntimeException ex) {
+                    // Filet de securite : l'IDE ne doit jamais voir une
+                    // exception brute issue d'une action utilisateur.
+                    final String message = "Search failed: " + ex.getClass().getSimpleName()
+                            + (ex.getMessage() == null ? "" : " — " + ex.getMessage());
+                    ApplicationManager.getApplication().invokeLater(() -> setStatus(message, true), modality);
+                    return;
+                }
+                if (indicator.isCanceled()) {
+                    // L'utilisateur a annule : le resultat est jete (onCancel()
+                    // met le message « Search cancelled. »).
+                    return;
+                }
+                ApplicationManager.getApplication().invokeLater(() -> showResults(hits), modality);
             }
-            resultList.setModel(model);
-            setStatus(hits.size() + (hits.size() == 1 ? " commit found." : " commits found."), false);
-        } catch (PickaxeException ex) {
-            setStatus(ex.getMessage() == null ? "Search failed." : ex.getMessage(), true);
-        } catch (RuntimeException ex) {
-            // Filet de securite : l'IDE ne doit jamais voir une exception
-            // brute issue d'une action utilisateur.
-            setStatus("Search failed: " + ex.getClass().getSimpleName()
-                    + (ex.getMessage() == null ? "" : " — " + ex.getMessage()), true);
-        }
+
+            @Override
+            public void onCancel() {
+                setStatus("Search cancelled.", false);
+            }
+        });
     }
 
-    private List<PickaxeHit> search(String needle) throws PickaxeException {
-        try (Repository repository = new FileRepositoryBuilder()
-                .setGitDir(repositoryRoot.resolve(Constants.DOT_GIT).toFile())
-                .readEnvironment()
-                .findGitDir()
-                .build()) {
+    /** Applique le resultat au modele. Appele sur l'EDT. */
+    private void showResults(List<PickaxeHit> hits) {
+        DefaultListModel<String> model = new DefaultListModel<>();
+        for (PickaxeHit hit : hits) {
+            model.addElement(hit.getShortId() + "  " + hit.getSubject()
+                    + (hit.getPaths().isEmpty() ? "" : "  [" + String.join(", ", hit.getPaths()) + "]"));
+        }
+        resultList.setModel(model);
+        setStatus(hits.size() + (hits.size() == 1 ? " commit found." : " commits found."), false);
+    }
+
+    /**
+     * Ouvre le depot et cherche les commits. Appele sur un thread de fond.
+     *
+     * <p>L'ouverture passe par {@link PickaxeRepository#open(Path)} : c'est
+     * le SEUL endroit ou le depot est construit (le repertoire Git est
+     * resolu par {@link GitRepositoryLocator}, qui sait lire le fichier
+     * {@code .git} d'un worktree), et c'est aussi le chemin couvert par le
+     * test de regression.</p>
+     */
+    private List<PickaxeHit> search(String needle, PickaxeMode mode, String pathFilter)
+            throws PickaxeException {
+        try (Repository repository = PickaxeRepository.open(repositoryRoot)) {
             PickaxeEngine engine = new PickaxeEngine(repository);
-            PickaxeQuery query = PickaxeQuery.builder(
-                    (PickaxeMode) modeCombo.getSelectedItem(), needle)
-                    .pathFilter(pathField.getText())
+            PickaxeQuery query = PickaxeQuery.builder(mode, needle)
+                    .pathFilter(pathFilter)
                     .build();
             return engine.search(query);
         } catch (IOException e) {

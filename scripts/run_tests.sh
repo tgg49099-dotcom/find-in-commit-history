@@ -84,9 +84,13 @@ echo "=== 1. compilation des sources du moteur ==="
 # que de JGit. La partie interface (src/main/java/.../ui) depend de la
 # plateforme IntelliJ : elle est compilee par le build Gradle, qui a la
 # plateforme sur son classpath.
+# GitRepositoryLocator est compile avec le moteur : il ne depend que de
+# java.nio (aucune dependance a la plateforme), et ses tests — le cas du
+# WORKTREE, ou .git est un fichier — doivent tourner dans cette suite.
 rm -rf "$BUILD/classes" "$BUILD/test-classes"
 mkdir -p "$BUILD/classes" "$BUILD/test-classes"
 find "$ROOT/src/main/java/com/tgglabs/pickaxe/engine" -name "*.java" > "$BUILD/main-sources.txt"
+echo "$ROOT/src/main/java/com/tgglabs/pickaxe/GitRepositoryLocator.java" >> "$BUILD/main-sources.txt"
 "$JAVAC" -encoding UTF-8 --release 17 -nowarn -cp "$CP" -d "$BUILD/classes" \
     @"$BUILD/main-sources.txt"
 if [ $? -ne 0 ]; then

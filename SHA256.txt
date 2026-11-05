@@ -2,22 +2,43 @@
 #
 # Plugin      : Find in Commit History (id com.tgglabs.pickaxe), version 0.0.1
 # Fichier     : build/distributions/FindinCommitHistory-0.0.1.zip
-# Taille      : 3 136 031 octets
-# Construit le: 2026-11-05 13:49 (CET), Gradle 8.10.2, `./gradlew --offline buildPlugin`
+# Taille      : 3 139 880 octets
+# Construit le: 2026-11-05 17:43:33 (CET), Gradle 8.10.2, `./gradlew --offline buildPlugin`
 #
-# Les deux empreintes ci-dessous sont celles du ZIP LIVRÉ (celles du fichier
-# réellement déposé sur le Marketplace). Le build est REPRODUCTIBLE : deux
-# builds du même source donnent le même ZIP, octet pour octet (contrôlé le
-# 05/11/2026, voir /work/preuves/cycle117/reproductibilite.log).
+# Les deux empreintes ci-dessous sont celles du ZIP LIVRÉ (le fichier
+# réellement déposé sur le Marketplace). Elles ont été recalculées après la
+# correction de D1 (recherche sur un thread de fond), D2 (la touche ENTRÉE
+# lance la recherche) et D3 (worktree : `.git` est un fichier) — les trois
+# correctifs sont dans le ZIP livré.
+#
+# D3 bis (05/11/2026 17:40) : dans un worktree, il faut ouvrir le dépôt COMMUN
+# (fichier `commondir`) ET déclarer le répertoire de travail
+# (`setWorkTree`). Sans cela, la recherche rendait 0 résultat, sans erreur.
+# Ce correctif est dans le ZIP livré, avec son test de régression
+# (32 tests verts).
+#
+# NE PAS RECONSTRUIRE. Le md5 d'un ZIP JetBrains n'est PAS un critère de
+# reproductibilité garanti (mesuré le 04/11 par la mère : deux ZIP de même
+# contenu, md5 différents — ils avaient été construits avec une configuration
+# antérieure). Avec la configuration actuelle (`isPreserveFileTimestamps =
+# false`, `isReproducibleFileOrder = true`), 2 reconstructions forcées du
+# 05/11/2026 17:43 ont donné le MÊME md5 et le MÊME sha256 : le ZIP est donc
+# reproductible octet pour octet, mais ce n'est pas un contrat de JetBrains.
+# Le critère de contenu (noms + octets, horodatages exclus) reste le plus
+# sûr : sa valeur et le nombre de parties hachées sont consignés dans
+#   /work/preuves/cycle120/hash-contenu.txt
+#   /work/NOTES.md
+# (et non ici : le pré-vol réserve l'empreinte md5 aux fichiers réels — une
+# valeur qui n'est le md5 d'aucun fichier y serait refusée).
 #
 # Vérification sur la machine de qui reçoit le fichier :
 #   sha256sum -c SHA256.txt
 #   md5sum    build/distributions/FindinCommitHistory-0.0.1.zip
 #
-# ATTENTION : un md5 qui ne correspond pas à cette valeur = le fichier reçu
-# n'est pas celui qui a été Announcementé. Ne pas téléverser.
+# ATTENTION : une empreinte qui ne correspond pas à cette valeur = le fichier
+# reçu n'est pas celui qui a été annoncé. Ne pas téléverser.
 
-164ca63168ad777a23d96297b2136983869640fe4e67cebd99a30c30bc18deba  build/distributions/FindinCommitHistory-0.0.1.zip
+ee90b66884fa16078495de6768c93bb1164840165bacb78d11558b370fdce980  build/distributions/FindinCommitHistory-0.0.1.zip
 
 # md5 (32 hex) :
-0e5a731f9241cff4de92517757b25cc9
+bb18e3f8281476b707a2a595b3c66a2e

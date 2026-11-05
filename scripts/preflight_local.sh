@@ -23,26 +23,42 @@
 #   - md5 du ZIP coherent avec la documentation ;
 #   - aucune mutation « contre » dans les sources.
 #
-# Il y ajoute un controle que la consigne exige explicitement : les deux
-# icones doivent se trouver DANS LE JAR du ZIP livre (`unzip -l`).
+# REGLE FONDAMENTALE (corrigee le 05/11/2026 14:2x apres relecture hostile) :
+# les verifications de contenu portent sur le DESCIPTEUR LIVRE
+# (`META-INF/plugin.xml` extrait du JAR contenu dans le ZIP livre), et non
+# sur le fichier source. C'est le descripteur livre que le Marketplace lit ;
+# `patchPluginXml` le reecrit (version, vendor, idea-version...) et c'est
+# donc lui qui doit etre valide.
 #
 # Usage : bash scripts/preflight_local.sh [/chemin/vers/le/projet]
 # Code de retour : 0 si et seulement si 0 ECHEC.
 # =============================================================================
 set -u
 
-ROOT="${1:-/work/pickaxe}"
+RACINE_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="${1:-$(cd "$RACINE_SCRIPT/.." && pwd)}"
 ECHECS=0
 OKS=0
+TMP="$(mktemp -d /tmp/preflight.XXXXXX)"
+trap 'rm -rf "$TMP"' EXIT
 
 echec() { echo "ECHEC : $*"; ECHECS=$((ECHECS + 1)); }
 ok()    { echo "OK    : $*"; OKS=$((OKS + 1)); }
+info()  { echo "NOTE   : $*"; }
 
 echo "=== CONTROLE DE PRE-VOL (reconstitution locale) — $ROOT ==="
 echo "date : $(date '+%Y-%m-%d %H:%M:%S %Z')"
 echo
 
-# ------------------------------------------------------- 1. plugin.xml ------
+# ------------------------------------------------------- 1. projet ----------
+if [ ! -d "$ROOT" ]; then
+    echec "projet introuvable : $ROOT"
+    echo
+    echo "FIN preflight : $ECHECS ECHEC"
+    exit 1
+fi
+ok "projet : $ROOT"
+
 PLUGIN_XML=""
 for c in "$ROOT/src/main/resources/META-INF/plugin.xml" "$ROOT/src/main/resources/plugin.xml"; do
     [ -f "$c" ] && PLUGIN_XML="$c" && break
@@ -53,12 +69,88 @@ if [ -z "$PLUGIN_XML" ]; then
     echo "FIN preflight : $ECHECS ECHEC"
     exit 1
 fi
-ok "plugin.xml trouve : $PLUGIN_XML"
+ok "plugin.xml source trouve : $PLUGIN_XML"
 
-XML_OUT="$(python3 -I - "$PLUGIN_XML" <<'PY'
+# version et nom attendus (gradle.properties)
+GRADLE_PROPS="$ROOT/gradle.properties"
+PLUGIN_VERSION=""; PLUGIN_NAME_GRADLE=""
+if [ -f "$GRADLE_PROPS" ]; then
+    PLUGIN_VERSION="$(sed -n 's/^pluginVersion[[:space:]]*=[[:space:]]*//p' "$GRADLE_PROPS" | head -1 | tr -d '[:space:]')"
+    PLUGIN_NAME_GRADLE="$(sed -n 's/^pluginName[[:space:]]*=[[:space:]]*//p' "$GRADLE_PROPS" | head -1 | tr -d '[:space:]')"
+fi
+[ -n "$PLUGIN_VERSION" ] && ok "pluginVersion (gradle.properties) : $PLUGIN_VERSION" \
+    || info "pluginVersion absente de gradle.properties"
+[ -n "$PLUGIN_NAME_GRADLE" ] && ok "pluginName (gradle.properties) : $PLUGIN_NAME_GRADLE" \
+    || info "pluginName absent de gradle.properties"
+
+# ------------------------------------------------------- 2. ZIP ------------
+# On ne prend pas « le plus recent » : on prend celui qui correspond au
+# nom et a la version annonces, sinon on echoue explicitement.
+ZIP=""
+LISTE_ZIPS="$(ls -1 "$ROOT"/build/distributions/*.zip 2>/dev/null || true)"
+if [ -z "$LISTE_ZIPS" ]; then
+    echec "aucun ZIP dans build/distributions"
+else
+    if [ -n "$PLUGIN_NAME_GRADLE" ] && [ -n "$PLUGIN_VERSION" ]; then
+        ATTENDU="$(echo "$PLUGIN_NAME_GRADLE" | tr -d '[:space:]')-$PLUGIN_VERSION.zip"
+        for z in $LISTE_ZIPS; do
+            [ "$(basename "$z")" = "$ATTENDU" ] && ZIP="$z" && break
+        done
+    fi
+    if [ -z "$ZIP" ] && [ "$(printf '%s\n' $LISTE_ZIPS | wc -l)" -eq 1 ]; then
+        ZIP="$(printf '%s\n' $LISTE_ZIPS | head -1)"
+    fi
+    if [ -z "$ZIP" ]; then
+        echec "aucun ZIP ne correspond au nom et a la version annonces (fichiers : $(echo "$LISTE_ZIPS" | tr '\n' ' '))"
+    else
+        ok "ZIP retenu : $(basename "$ZIP") ($(stat -c%s "$ZIP") octets)"
+    fi
+fi
+
+# ------------------------------------------------------- 3. jar du plugin ---
+# Le jar a inspecter est celui qui CONTIENT `META-INF/plugin.xml` : pas
+# « le premier lib/*.jar », qui pourrait etre une dependance.
+JAR_DANS_ZIP=""; TMPJAR=""
+if [ -n "$ZIP" ]; then
+    for j in $(unzip -Z1 "$ZIP" 2>/dev/null | grep -E "lib/[^/]+\.jar$" | grep -v searchableOptions); do
+        TMPJAR="$TMP/plugin.jar"
+        unzip -p "$ZIP" "$j" > "$TMPJAR" 2>/dev/null || continue
+        if unzip -Z1 "$TMPJAR" 2>/dev/null | grep -q "^META-INF/plugin.xml$"; then
+            JAR_DANS_ZIP="$j"
+            break
+        fi
+    done
+    if [ -z "$JAR_DANS_ZIP" ]; then
+        echec "aucun jar du plugin (contenant META-INF/plugin.xml) dans le ZIP livre"
+    else
+        ok "jar du plugin : $JAR_DANS_ZIP"
+    fi
+fi
+
+# ------------------------------- 4. descripteur LIVRE (le vrai) ----------
+XML_OUT=""
+XML_DELIVRE=""
+if [ -n "$JAR_DANS_ZIP" ]; then
+    unzip -p "$TMPJAR" META-INF/plugin.xml > "$TMP/plugin.xml" 2>/dev/null || true
+    XML_DELIVRE="$TMP/plugin.xml"
+fi
+
+if [ -z "$XML_DELIVRE" ] || [ ! -s "$XML_DELIVRE" ]; then
+    echec "plugin.xml absent du jar du ZIP livre"
+    echo
+    echo "FIN preflight : $ECHECS ECHEC"
+    exit 1
+fi
+ok "descripteur livré extrait : META-INF/plugin.xml du jar du ZIP ($(stat -c%s "$XML_DELIVRE") octets)"
+
+XML_OUT="$(python3 -I - "$XML_DELIVRE" <<'PY'
 import sys, xml.etree.ElementTree as ET
 p = sys.argv[1]
-r = ET.parse(p).getroot()
+try:
+    r = ET.parse(p).getroot()
+except Exception as e:
+    print("PARSE_ERROR=" + str(e))
+    sys.exit(2)
 def txt(tag):
     e = r.find(tag)
     return (e.text or "").strip() if e is not None else ""
@@ -66,11 +158,17 @@ name = txt("name")
 desc = txt("description")
 cn = r.find("change-notes")
 change = (cn.text or "").strip() if cn is not None else ""
-deps = [ (d.text or "").strip() for d in r.findall("depends") ]
+# <depends> peut etre vide en texte mais contenir des <module>/<config-file>
+deps = []
+for d in r.findall("depends"):
+    children = [c for c in d if c.tag]
+    label = (d.text or "").strip()
+    if not label:
+        label = ",".join("%s:%s" % (c.tag, (c.get("name") or c.get("file") or "")) for c in children)
+    deps.append(label if label else "(vide)")
 lic = r.find("license")
 iv = r.find("idea-version")
-until = ""
-since = ""
+until = since = ""
 if iv is not None:
     until = (iv.get("until-build") or "").strip()
     since = (iv.get("since-build") or "").strip()
@@ -82,36 +180,67 @@ print("CHANGE_LEN=" + str(len(change)))
 print("HAS_LICENSE=" + ("1" if lic is not None else "0"))
 print("SINCE=" + since)
 print("UNTIL=" + until)
+print("ID=" + txt("id"))
+print("VERSION=" + txt("version"))
 PY
-)"
+)" || XML_OUT=""
+if [ -z "$XML_OUT" ] || printf '%s' "$XML_OUT" | grep -q "^PARSE_ERROR="; then
+    echec "plugin.xml livre illisible ou mal forme : $XML_OUT"
+    echo
+    echo "FIN preflight : $ECHECS ECHEC"
+    exit 1
+fi
 getf() { echo "$XML_OUT" | sed -n "s/^$1=//p"; }
 
 NAME="$(getf NAME)"; NAME_LEN="$(getf NAME_LEN)"; DEPENDS="$(getf DEPENDS)"
 DESC_LEN="$(getf DESC_LEN)"; CHANGE_LEN="$(getf CHANGE_LEN)"
 HAS_LICENSE="$(getf HAS_LICENSE)"; SINCE="$(getf SINCE)"; UNTIL="$(getf UNTIL)"
+PLUGIN_ID="$(getf ID)"; VERSION_LIVREE="$(getf VERSION)"
 
-# ------------------------------------------------------- 2. depends --------
+# ------------------------------------------------------- 5. depends --------
 if [ -n "$DEPENDS" ]; then
-    ok "<depends> present : $DEPENDS"
+    ok "<depends> présent (descripteur livré) : $DEPENDS"
 else
-    echec "aucun <depends> dans plugin.xml"
+    echec "aucun <depends> dans le plugin.xml livré"
 fi
 
-# ------------------------------------------------------- 3. description -----
+# ------------------------------------------------------- 6. description -----
 if [ "${DESC_LEN:-0}" -gt 0 ] 2>/dev/null; then
-    ok "<description> present (${DESC_LEN} caracteres)"
+    ok "<description> présent (${DESC_LEN} caractères, descripteur livré)"
 else
-    echec "<description> manquant ou vide dans plugin.xml"
+    echec "<description> manquant ou vide dans le plugin.xml livré"
 fi
 
-# ------------------------------------------------------- 4. license racine --
+# ------------------------------------------------------- 7. license racine --
 if [ "$HAS_LICENSE" = "1" ]; then
-    echec "<license> racine present dans plugin.xml (interdit : la licence se declare sur la fiche)"
+    echec "<license> racine présent dans le plugin.xml livré (interdit : la licence se déclare sur la fiche)"
 else
-    ok "pas de <license> racine"
+    ok "pas de <license> racine dans le descripteur livré"
 fi
 
-# ------------------------------------------------------- 5. until-build -----
+# ------------------------------------------------------- 8. id / version ----
+if [ -n "$PLUGIN_ID" ]; then
+    ok "id livré : $PLUGIN_ID"
+else
+    echec "pas de <id> dans le plugin.xml livré"
+fi
+if [ -n "$PLUGIN_VERSION" ] && [ "$VERSION_LIVREE" != "$PLUGIN_VERSION" ]; then
+    echec "version livrée ($VERSION_LIVREE) différente de pluginVersion ($PLUGIN_VERSION)"
+elif [ -n "$VERSION_LIVREE" ]; then
+    ok "version livrée : $VERSION_LIVREE"
+fi
+
+# ------------------------------------------------------- 9. since/until -----
+if [ -z "$SINCE" ]; then
+    echec "pas de since-build dans le plugin.xml livré"
+else
+    MAJ_SINCE="$(echo "$SINCE" | sed 's/[^0-9].*//')"
+    if [ -z "$MAJ_SINCE" ] || [ "$MAJ_SINCE" -gt 262 ] 2>/dev/null; then
+        echec "since-build=$SINCE exclut l'IDE de référence (build 262, PyCharm 2026.2.4)"
+    else
+        ok "since-build=$SINCE (n'exclut pas l'IDE de référence 262)"
+    fi
+fi
 if [ -n "$UNTIL" ]; then
     MAJ="$(echo "$UNTIL" | sed 's/[^0-9].*//')"
     if [ -n "$MAJ" ] && [ "$MAJ" -lt 262 ] 2>/dev/null; then
@@ -123,20 +252,12 @@ else
     ok "pas d'until-build (aucune borne haute exclue)"
 fi
 
-# ------------------------------------------------------- 6. TODO/FIXME ------
-if grep -rniE "TODO|FIXME|placeholder" "$ROOT/src" >/dev/null 2>&1; then
-    echec "TODO / FIXME / placeholder present dans src"
-    grep -rniE "TODO|FIXME|placeholder" "$ROOT/src" | head -5 | sed 's/^/       /'
-else
-    ok "aucun TODO / FIXME / placeholder dans src"
-fi
-
-# ------------------------------------------------------- 7. nom public ------
+# ------------------------------------------------------- 10. nom public -----
 LOWER_NAME="$(echo "$NAME" | tr 'A-Z' 'a-z')"
 if [ "${NAME_LEN:-999}" -gt 30 ] 2>/dev/null; then
     echec "nom public trop long : ${NAME_LEN} caracteres (max 30)"
 else
-    ok "nom public : \"$NAME\" (${NAME_LEN} caracteres <= 30)"
+    ok "nom public livré : \"$NAME\" (${NAME_LEN} caracteres <= 30)"
 fi
 for interdit in plugin intellij jetbrains; do
     case "$LOWER_NAME" in
@@ -144,32 +265,72 @@ for interdit in plugin intellij jetbrains; do
     esac
 done
 
-# ------------------------------------------------------- 8. change-notes ----
+# ------------------------------------------------------- 11. change-notes ---
 if [ "${CHANGE_LEN:-0}" -gt 0 ] 2>/dev/null; then
-    ok "<change-notes> non vide (${CHANGE_LEN} caracteres)"
+    ok "<change-notes> non vide (${CHANGE_LEN} caractères, descripteur livré)"
 else
     echec "change-notes manquantes ou vides dans plugin.xml (obligatoires a la revue)"
 fi
 
-# ------------------------------------------------------- 9. icones ---------
-META="$ROOT/src/main/resources/META-INF"
-for ico in pluginIcon.svg pluginIcon_dark.svg; do
-    if [ ! -f "$META/$ico" ]; then
-        echec "logo $ico manquant dans .../src/main/resources/META-INF"
-        continue
-    fi
-    W="$(grep -o 'width="[0-9]*"' "$META/$ico" | head -1 | tr -dc '0-9')"
-    H="$(grep -o 'height="[0-9]*"' "$META/$ico" | head -1 | tr -dc '0-9')"
-    if [ "$W" = "40" ] && [ "$H" = "40" ]; then
-        ok "logo $ico : 40x40 (width=\"40\" height=\"40\" ecrits dans le fichier)"
-    else
-        echec "logo $ico : dimensions ${W}x${H} au lieu de 40x40"
-    fi
-done
+# ------------------------------------------------------- 12. TODO/FIXME -----
+OUT_GREP="$(grep -rniE "TODO|FIXME|placeholder" "$ROOT/src" 2>/dev/null)"
+CODE_GREP=$?
+if [ "$CODE_GREP" -eq 0 ]; then
+    echec "TODO / FIXME / placeholder present dans src"
+    printf '%s\n' "$OUT_GREP" | head -5 | sed 's/^/       /'
+elif [ "$CODE_GREP" -eq 1 ]; then
+    ok "aucun TODO / FIXME / placeholder dans src"
+else
+    echec "la recherche de TODO / FIXME / placeholder a echoue (grep code $CODE_GREP) : le controle n'est pas fiable"
+fi
 
-# ------------------------------------------------------- 10. media ---------
+# ------------------------------------------------------- 13. icones ---------
+# Les icones sont verifiees par scripts/controle_icones.py (controle hostile :
+# XML strict, 40x40 ecrits dans le fichier, aucune reference externe, traits
+# connectes, contraste WCAG, rasterisation). On le lance sur les sources ET
+# sur les icones extraites du jar LIVRE.
+META="$ROOT/src/main/resources/META-INF"
+if [ -f "$ROOT/scripts/controle_icones.py" ]; then
+    SORTIE_ICO="$(python3 "$ROOT/scripts/controle_icones.py" "$META" 2>&1)"
+    CODE_ICO=$?
+    if [ "$CODE_ICO" -eq 0 ]; then
+        ok "icones sources : controle hostile vert ($(printf '%s' "$SORTIE_ICO" | grep -c '^OK') contrôles OK)"
+    else
+        echec "icones sources : controle hostile en échec"
+        printf '%s\n' "$SORTIE_ICO" | grep -E "^(ECHEC|NOTE)" | sed 's/^/       /'
+    fi
+    if [ -n "$JAR_DANS_ZIP" ]; then
+        TMPICO="$TMP/icones"
+        mkdir -p "$TMPICO"
+        for ico in pluginIcon.svg pluginIcon_dark.svg; do
+            if unzip -p "$TMPJAR" "META-INF/$ico" > "$TMPICO/$ico" 2>/dev/null && [ -s "$TMPICO/$ico" ]; then
+                ok "$ico présent dans le jar du ZIP livré ($JAR_DANS_ZIP)"
+            else
+                echec "$ico absent du jar du ZIP livré ($JAR_DANS_ZIP)"
+            fi
+        done
+        if [ -s "$TMPICO/pluginIcon.svg" ] && [ -s "$TMPICO/pluginIcon_dark.svg" ]; then
+            SORTIE_ICO_ZIP="$(python3 "$ROOT/scripts/controle_icones.py" "$TMPICO" 2>&1)"
+            CODE_ICO_ZIP=$?
+            if [ "$CODE_ICO_ZIP" -eq 0 ]; then
+                ok "icones du jar livré : contrôle hostile vert"
+            else
+                echec "icones du jar livré : contrôle hostile en échec"
+                printf '%s\n' "$SORTIE_ICO_ZIP" | grep -E "^(ECHEC|NOTE)" | sed 's/^/       /'
+            fi
+        fi
+    fi
+else
+    echec "scripts/controle_icones.py absent : les icones ne sont pas vérifiées en profondeur"
+    for ico in pluginIcon.svg pluginIcon_dark.svg; do
+        [ -f "$META/$ico" ] && ok "$ico présent dans src/main/resources/META-INF" \
+            || echec "logo $ico manquant dans .../src/main/resources/META-INF"
+    done
+fi
+
+# ------------------------------------------------------- 14. media ---------
 if [ -d "$ROOT/media" ]; then
-    python3 -I - "$ROOT/media" <<'PY' || echec "image(s) de media/ < 1200x760"
+    if python3 -I - "$ROOT/media" <<'PY'
 import sys, struct
 from pathlib import Path
 d = Path(sys.argv[1])
@@ -189,73 +350,111 @@ for f in sorted(d.rglob("*")):
                 h, w = struct.unpack(">HH", data[i+5:i+9]); break
             if m in (0xD8,0xD9) or 0xD0 <= m <= 0xD7: i += 2; continue
             ln = struct.unpack(">H", data[i+2:i+4])[0]; i += 2 + ln
-    if w and h and (w < 1200 or h < 760): bad.append(f"{f.name} {w}x{h}")
+    if w and h and (w < 1200 or h < 760): bad.append("%s %dx%d" % (f.name, w, h))
 print("\n".join(bad))
 sys.exit(1 if bad else 0)
 PY
-    ok "media/ : images >= 1200x760"
+    then
+        ok "media/ : images >= 1200x760"
+    else
+        echec "image(s) de media/ < 1200x760 (ou illisible)"
+    fi
+else
+    info "media/ absent du projet : critère des captures NON APPLICABLE (pas de média à vérifier)"
 fi
 
-# ------------------------------------------------------- 11. ZIP ------------
-ZIP="$(ls -t "$ROOT"/build/distributions/*.zip 2>/dev/null | head -1)"
-if [ -z "$ZIP" ]; then
-    echec "aucun ZIP dans build/distributions"
-else
-    ZIP_MTIME="$(stat -c %Y "$ZIP")"
-    NEWER_SRC="$(find "$ROOT/src" "$ROOT/build.gradle.kts" "$ROOT/settings.gradle.kts" "$ROOT/gradle.properties" -newer "$ZIP" -type f 2>/dev/null | head -5)"
-    if [ -n "$NEWER_SRC" ]; then
-        echec "le ZIP n'est pas plus recent que les sources : $(echo "$NEWER_SRC" | tr '\n' ' ')"
+# ------------------------------------------------------- 15. lib/ du ZIP ----
+if [ -n "$ZIP" ]; then
+    CONTENU_LIB="$(unzip -Z1 "$ZIP" 2>/dev/null | grep -E "lib/[^/]+\.jar$")"
+    if printf '%s\n' "$CONTENU_LIB" | grep -qiE "slf4j|commons-codec"; then
+        echec "le ZIP embarque slf4j-api ou commons-codec (fournis par la plateforme) : refus attendu par le Marketplace"
+        printf '%s\n' "$CONTENU_LIB" | grep -iE "slf4j|commons-codec" | sed 's/^/       /'
     else
-        ok "ZIP present et plus recent que les sources : $(basename "$ZIP") ($(stat -c%s "$ZIP") octets)"
+        ok "lib/ du ZIP : ni slf4j-api ni commons-codec embarqués"
     fi
-
-    # les deux icones doivent etre DANS LE JAR du ZIP livre
-    JAR="$(unzip -Z1 "$ZIP" | grep -E "lib/[^/]+\.jar$" | grep -v searchableOptions | head -1)"
-    if [ -n "$JAR" ]; then
-        TMPJAR="$(mktemp -d)/plugin.jar"
-        unzip -p "$ZIP" "$JAR" > "$TMPJAR"
-        LISTE="$(unzip -l "$TMPJAR" | awk '{print $4}')"
-        for ico in pluginIcon.svg pluginIcon_dark.svg; do
-            if echo "$LISTE" | grep -q "META-INF/$ico"; then
-                ok "$ico present dans le jar du ZIP livre ($JAR)"
-            else
-                echec "$ico absent du jar du ZIP livre ($JAR)"
-            fi
-        done
+    NB_PLUGIN_JAR=0
+    for j in $(printf '%s\n' "$CONTENU_LIB" | grep -v searchableOptions); do
+        unzip -p "$ZIP" "$j" > "$TMP/candidat.jar" 2>/dev/null || continue
+        unzip -Z1 "$TMP/candidat.jar" 2>/dev/null | grep -q "^META-INF/plugin.xml$" && NB_PLUGIN_JAR=$((NB_PLUGIN_JAR+1))
+    done
+    if [ "$NB_PLUGIN_JAR" -eq 1 ]; then
+        ok "lib/ du ZIP : exactement un jar de plugin (les autres jars sont des dépendances déclarées)"
     else
-        echec "jar du plugin introuvable dans le ZIP livre"
+        echec "lib/ du ZIP : $NB_PLUGIN_JAR jar(s) contenant META-INF/plugin.xml (1 attendu)"
     fi
+fi
 
-    # md5 coherent avec la documentation
-    MD5_ZIP="$(md5sum "$ZIP" | cut -d' ' -f1)"
-    DOCS_OK=0; DOCS_TOTAL=0; DOCS_BAD=""
-    while IFS= read -r f; do
-        DOCS_TOTAL=$((DOCS_TOTAL+1))
-        if grep -q "$MD5_ZIP" "$f"; then
-            DOCS_OK=$((DOCS_OK+1))
+# ------------------------------------------------------- 16. fraicheur ------
+if [ -n "$ZIP" ]; then
+    # Un ZIP reproductible se compare par CONTENU (sha256), pas par horodatage :
+    # un `git clone` ou un `tar` rafraichit les mtimes des sources sans
+    # changer une ligne de code. On fait donc les DEUX controles.
+    SHA_ZIP="$(sha256sum "$ZIP" | cut -d' ' -f1)"
+    if [ -f "$ROOT/SHA256.txt" ]; then
+        SHA_DOC="$(grep -oE "\b[0-9a-f]{64}\b" "$ROOT/SHA256.txt" | head -1)"
+        if [ -z "$SHA_DOC" ]; then
+            echec "SHA256.txt ne contient aucune empreinte sha256"
+        elif [ "$SHA_DOC" = "$SHA_ZIP" ]; then
+            ok "sha256 du ZIP = sha256 documenté dans SHA256.txt (source de vérité unique)"
         else
-            for autre in $(grep -oE "\b[0-9a-f]{32}\b" "$f" | sort -u); do
-                DOCS_BAD="$DOCS_BAD $f($autre)"
-            done
+            echec "sha256 du ZIP ($SHA_ZIP) différent du sha256 documenté dans SHA256.txt ($SHA_DOC)"
         fi
-    done < <(find "$ROOT" -maxdepth 2 -type f \( -name "*.md" -o -name "*.txt" \) \
-                -not -path "$ROOT/build/*" -not -path "$ROOT/.git/*" | sort)
-    if [ "$DOCS_TOTAL" -eq 0 ]; then
-        echec "aucune documentation (md/txt) pour verifier le md5 du ZIP"
-    elif [ "$DOCS_OK" -gt 0 ] && [ -z "$DOCS_BAD" ]; then
-        echo "md5 OK $MD5_ZIP et coherent avec la documentation ($DOCS_OK doc(s) verifiee(s))"
     else
-        echec "md5 du ZIP non coherent avec la documentation (attendu $MD5_ZIP ; divergent :$DOCS_BAD)"
+        echec "SHA256.txt absent : pas de source de vérité unique pour le ZIP livré"
+    fi
+    NEWER_SRC="$(find "$ROOT/src/main" "$ROOT/build.gradle.kts" "$ROOT/settings.gradle.kts" \
+        "$ROOT/gradle.properties" "$ROOT/libs" -newer "$ZIP" -type f 2>/dev/null | head -5)"
+    if [ -n "$NEWER_SRC" ]; then
+        echec "le ZIP n'est pas plus récent que les sources : $(echo "$NEWER_SRC" | tr '\n' ' ') (relancer le build : il est reproductible)"
+    else
+        ok "ZIP plus récent que les sources de production (src/main, fichiers Gradle, libs/)"
     fi
 fi
 
-# ------------------------------------------------------- 12. mutations ------
-PY_CONTRE="$(find "$ROOT/scripts" -maxdepth 1 -type f -name "*contre*.py" | head -1)"
+# ------------------------------------------------------- 17. md5 / docs -----
+if [ -n "$ZIP" ]; then
+    MD5_ZIP="$(md5sum "$ZIP" | cut -d' ' -f1)"
+    if [ -z "$MD5_ZIP" ]; then
+        echec "md5sum indisponible ou vide : le contrôle du md5 ne peut pas être fiable"
+    else
+        DOCS_OK=0; DOCS_TOTAL=0; DOCS_BAD=""
+        NOM_ZIP="$(basename "$ZIP")"
+        while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            DOCS_TOTAL=$((DOCS_TOTAL+1))
+            if grep -q "$MD5_ZIP" "$f"; then
+                DOCS_OK=$((DOCS_OK+1))
+            else
+                # on ne retient que les hashes attaches a CE ZIP (une ligne qui
+                # parle du ZIP livre) : un autre hash dans la doc n'est pas un
+                # conflit, c'est une autre version.
+                while IFS= read -r ligne; do
+                    [ -z "$ligne" ] && continue
+                    for autre in $(printf '%s' "$ligne" | grep -oE "\b[0-9a-f]{32}\b" | sort -u); do
+                        DOCS_BAD="$DOCS_BAD $f($autre)"
+                    done
+                done < <(grep -F "$NOM_ZIP" "$f" 2>/dev/null || true)
+            fi
+        done < <(find "$ROOT" -maxdepth 2 -type f \( -name "*.md" -o -name "*.txt" \) \
+                -not -path "$ROOT/build/*" -not -path "$ROOT/.git/*" | sort)
+        if [ "$DOCS_TOTAL" -eq 0 ]; then
+            echec "aucune documentation (md/txt) pour vérifier le md5 du ZIP"
+        elif [ "$DOCS_OK" -gt 0 ] && [ -z "$DOCS_BAD" ]; then
+            ok "md5 OK $MD5_ZIP et cohérent avec la documentation ($DOCS_OK doc(s) vérifiée(s))"
+        else
+            echec "md5 du ZIP non cohérent avec la documentation (attendu $MD5_ZIP ; divergent :$DOCS_BAD)"
+        fi
+    fi
+fi
+
+# ------------------------------------------------------- 18. contre-epreuve -
+PY_CONTRE="$(find "$ROOT/scripts" -maxdepth 1 -type f -name "*contre*.py" 2>/dev/null | head -1)"
 if [ -z "$PY_CONTRE" ]; then
-    echo "rien a controler : aucun fichier .py dont le nom contient « contre »"
+    echec "contre-epreuve : aucun fichier .py dont le nom contient « contre » — le critère ne peut pas être vérifié"
 else
+    # (a) aucune mutation declares ne doit se trouver telle quelle dans src/
     OUT="$(python3 -I - "$PY_CONTRE" "$ROOT/src" <<'PY'
-import importlib.util, sys
+import importlib.util, sys, re
 from pathlib import Path
 script, srcdir = Path(sys.argv[1]), Path(sys.argv[2])
 spec = importlib.util.spec_from_file_location("contre_mod", script)
@@ -272,20 +471,46 @@ if not muts:
     sys.exit(0)
 faux = []
 for nom, v in muts:
+    # REGLE : c'est le TEXTE LITERAL de la mutation qui ne doit pas se trouver
+    # dans les sources. La forme « avant » est ecrite sous forme de REGEX
+    # justement pour que son texte litteral ne soit pas findable ; on ne doit
+    # donc PAS l'interpreter comme un motif (il correspond, par construction,
+    # au code legitime d'origine).
     for f in sorted(Path(srcdir).rglob("*")):
-        if f.is_file() and v in f.read_text(encoding="utf-8", errors="replace"):
-            faux.append(f"{nom} present dans {f}")
-print("\n".join(faux))
+        if not f.is_file():
+            continue
+        if v in f.read_text(encoding="utf-8", errors="replace"):
+            faux.append("%s present dans %s" % (nom, f))
+print("\n".join(sorted(set(faux))))
 sys.exit(1 if faux else 0)
 PY
 )"
     CODE=$?
     if [ $CODE -eq 0 ] && [ "$OUT" != "AUCUNE_MUTATION_DECLAREE" ]; then
-        ok "contre-epreuve : $(basename "$PY_CONTRE") arme, aucune mutation dans les sources"
+        ok "contre-épreuve : aucune mutation déclarée ne se trouve dans les sources"
     elif [ "$OUT" = "AUCUNE_MUTATION_DECLAREE" ]; then
-        echec "contre-epreuve : $(basename "$PY_CONTRE") ne declare aucune mutation (controle arme sur du vide)"
+        echec "contre-épreuve : $(basename "$PY_CONTRE") ne déclare aucune mutation (contrôle armé sur du vide)"
     else
-        echec "contre-epreuve : mutation presente dans les sources -> $OUT"
+        echec "contre-épreuve : mutation présente dans les sources -> $OUT"
+    fi
+    # (b) la contre-epreuve est reellement executee : elle doit rester VALIDE
+    JDK_HOME=""
+    if [ -n "${JAVA_HOME:-}" ] && [ -x "${JAVA_HOME}/bin/javac" ]; then
+        JDK_HOME="$JAVA_HOME"
+    else
+        for c in /work/tools/jdk-*/bin/javac /usr/lib/jvm/*/bin/javac; do
+            [ -x "$c" ] && JDK_HOME="$(dirname "$(dirname "$c")")" && break
+        done
+    fi
+    if [ -n "$JDK_HOME" ]; then
+        if JAVA_HOME="$JDK_HOME" python3 "$PY_CONTRE" > "$TMP/contre.log" 2>&1; then
+            ok "contre-épreuve exécutée et VALIDÉE ($(basename "$PY_CONTRE") : la suite échoue bien sur le moteur muté)"
+        else
+            echec "contre-épreuve exécutée mais NON validée : $(basename "$PY_CONTRE") — voir la sortie"
+            tail -5 "$TMP/contre.log" | sed 's/^/       /'
+        fi
+    else
+        info "contre-épreuve non exécutée (aucun JDK trouvé) : le critère des mutations reste vérifié"
     fi
 fi
 
