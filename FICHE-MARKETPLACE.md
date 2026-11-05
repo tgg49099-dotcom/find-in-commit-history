@@ -49,7 +49,7 @@ Marketplace).
 |---|---|
 | Prix | **gratuit** (`0 $`) — pas d'offre payante, pas de période d'essai |
 | Licence | **MIT** (décision de la mère, 05/11/2026) — `LICENSE` à la racine du dépôt |
-| `donationLinks` | `[]` — plugin gratuit, aucune lien de don (la production Gumroad est arrêtée) |
+| `donationLinks` | `[]` — plugin gratuit, aucun lien de don (la production Gumroad est arrêtée) |
 
 ## 5. Les 8 champs d'URL
 
@@ -58,7 +58,7 @@ Marketplace).
 | `sourceCodeUrl` | `https://github.com/tgg49099-dotcom/find-in-commit-history` |
 | `licenseUrl` | `https://github.com/tgg49099-dotcom/find-in-commit-history/blob/main/LICENSE` |
 | `privacyPolicyUrl` | `https://labs.chiffreo.ch` |
-| `url` | `https://plugins.jetbrains.com/plugin/<ID>-find-in-commit-history` — **`<ID>` est le numéro numérique que le Marketplace attribue à la première publication : à remplacer juste après le dépôt.** En attendant, la valeur par défaut accepted par le formulaire est le lien du dépôt : `https://github.com/tgg49099-dotcom/find-in-commit-history`. |
+| `url` | `https://plugins.jetbrains.com/plugin/<ID>-find-in-commit-history` — **`<ID>` est le numéro numérique que le Marketplace attribue à la première publication : à remplacer juste après le dépôt.** En attendant, on peut mettre le lien du dépôt : `https://github.com/tgg49099-dotcom/find-in-commit-history`. |
 | `forumUrl` | idem `url` (le plugin n'a pas de forum propre) |
 | `bugtrackerUrl` | `https://github.com/tgg49099-dotcom/find-in-commit-history/issues` |
 | `docUrl` | `https://github.com/tgg49099-dotcom/find-in-commit-history#readme` |
