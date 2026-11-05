@@ -28,12 +28,20 @@
 
   <extensions defaultExtensionNs="com.intellij">
     <postStartupActivity implementation="com.tgglabs.pickaxe.PickaxeStartupActivity"/>
+  </extensions>
 
+  <!-- Les actions se declarent dans un bloc <actions> de premier niveau, et
+       NON dans <extensions> : placees dans <extensions>, elles sont
+       silencieusement ignorees par la plateforme (l'action n'apparait
+       alors dans aucun menu). C'est ce que la capture du menu Tools du
+       05/11 11:00 a revele : le plugin se chargeait, mais l'action
+       n'etait pas enregistree. -->
+  <actions>
     <action id="com.tgglabs.pickaxe.FindInHistoryAction"
             class="com.tgglabs.pickaxe.ui.FindInHistoryAction"
             text="Find in Commit History…"
             description="Search the Git history for commits that add or remove a string (git log -S / -G)">
       <add-to-group group-id="ToolsMenu" anchor="last"/>
     </action>
-  </extensions>
+  </actions>
 </idea-plugin>
