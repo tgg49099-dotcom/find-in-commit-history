@@ -233,7 +233,7 @@ Concrètement, après le « Submit » de l'étape 6 :
    ⚠ **c'est un acte juridique réservé à Tgg** : ne rien cocher à sa place, ne pas inventer de
    numéro de registre ni de coordonnées bancaires — signaler à la mère.
 5. ⚠ le plugin reste **non listé** tant que JetBrains ne l'a pas approuvé (`approve:false`) :
-   c'est normal, et c'est noté dans `NOTES-PUBLICATION.md`.
+   c'est normal, et c'est noté dans `NOTES-PUBLICATION-PROCEDURE.md`.
 
 ### 5.2 La suite
 
@@ -241,7 +241,7 @@ Concrètement, après le « Submit » de l'étape 6 :
    `FICHE-MARKETPLACE.md` § 5, champ `url`).
 2. Le porter dans `/rapports/produits.json` (plateforme `jetbrains`, `id` = ce numéro) — c'est
    ce qui fera relever les vrais chiffres chaque matin.
-3. Suivre la procédure `/work/pickaxe/NOTES-PUBLICATION.md` (page accessible, chargement dans
+3. Suivre la procédure `/work/pickaxe/NOTES-PUBLICATION-PROCEDURE.md` (page accessible, chargement dans
    l'IDE, URL définitives, téléchargements à J+1 / J+7 / J+14).
 
 ---
