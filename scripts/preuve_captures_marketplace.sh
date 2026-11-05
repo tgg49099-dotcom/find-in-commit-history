@@ -129,6 +129,17 @@ fi
 rm -rf "$CFG"
 mkdir -p "$CFG/system" "$CFG/log" "$CFG/plugins"
 cp -a "$CFG_BASE/config" "$CFG/config"
+# 05/11/2026 21:44 — CORRECTIF MEMOIRE : on copie AUSSI le repertoire « system »
+# (les index deja construits, 382 Mo). Sans lui, l'IDE doit reindexer le depot
+# de demonstration (5 002 commits) au demarrage : le pic de memoire a fait
+# OOM-killer l'IDE (cgroup 1 572 864 000 o, oom_kill=1) -> « 1016 Killed »
+# et 0 capture. Avec les index reutilises, aucun reindexage.
+if [ -d "$CFG_BASE/system" ]; then
+    cp -a "$CFG_BASE/system" "$CFG/system"
+    log "systeme (index) recopie : $(du -sh "$CFG/system" | cut -f1) -> pas de reindexage"
+else
+    log "ATTENTION : pas de « system » de reference -> reindexage (risque OOM)"
+fi
 log "config recopiee : $(du -sh "$CFG/config" | cut -f1) (modale Islands et bulles deja fermees)"
 cat > "$CFG/idea.properties" <<EOF
 idea.config.path=$CFG/config
@@ -139,7 +150,7 @@ EOF
 cat > "$CFG/pycharm64.vmoptions" <<'EOF'
 -Xms128m
 -Xmx512m
--XX:ReservedCodeCacheSize=240m
+-XX:ReservedCodeCacheSize=192m
 -XX:+UseSerialGC
 -XX:MaxMetaspaceSize=320m
 -XX:MaxDirectMemorySize=64m
@@ -153,7 +164,9 @@ cat > "$CFG/pycharm64.vmoptions" <<'EOF'
 -Dide.newUi.first.time.experience=false
 -Dide.is.internal=false
 -Didea.suppress.statistics.report=true
+-Dide.browser.jcef.enabled=false
 EOF
+rm -rf "$CFG/plugins/FindinCommitHistory"
 unzip -q -o "$ZIP" -d "$CFG/plugins"
 log "plugin(s) depose(s) : $(ls "$CFG/plugins")"
 log "jar principal : $(find "$CFG/plugins" -name 'FindinCommitHistory-*.jar' ! -name '*searchableOptions*' | head -1)"

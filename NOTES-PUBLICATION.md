@@ -20,9 +20,9 @@ autre chose que ce qui est mesuré.
 
 | | Valeur attendue | Vérification |
 |---|---|---|
-| Le ZIP livré | md5 `ca8a353c8521c1e28d91303dd9573fd4` · sha256 `95e5a91e705191f0a14e89eb6dd394add72ed576a1f7dac2242692fc6729e01f` · 3 130 623 o | `cd /work/pickaxe && sha256sum -c SHA256.txt && md5sum build/distributions/FindinCommitHistory-0.0.1.zip` |
+| Le ZIP livré | md5 `00f2bc2495fcd34b7a46cc9da5e8a8d4` · sha256 `9687a8551e4d4147558c772d34b9bffd888303921b12cac8e94ab45a415578d9` · 3 133 212 o | `cd /work/pickaxe && sha256sum -c SHA256.txt && md5sum build/distributions/FindinCommitHistory-0.0.1.zip` |
 | Le numéro numérique | `<ID>` (attribué par le Marketplace à l'upload) | `GET https://plugins.jetbrains.com/api/vendors/tgg-labs/plugins` → le champ `id` de l'entrée `com.tgglabs.pickaxe` |
-| Le commit du CODE dans le dépôt public | `749162b384b86e68500a9f8cb5096e235bbf3cfd` (61 fichiers ; des commits de documentation peuvent être au-dessus) | `GET https://api.github.com/repos/tgg49099-dotcom/find-in-commit-history/commits?per_page=1` |
+| Le commit du CODE dans le dépôt public | `1dbbcb0eb9b9efc55e42a3f8f17760b7af3eb9ef` (67 fichiers ; des commits de documentation peuvent être au-dessus) | `GET https://api.github.com/repos/tgg49099-dotcom/find-in-commit-history/commits?per_page=1` |
 
 ---
 
@@ -35,14 +35,17 @@ autre chose que ce qui est mesuré.
 | a1 | La page du plugin répond | `curl -s -o /dev/null -w "%{http_code}\n" "https://plugins.jetbrains.com/plugin/<ID>-find-in-commit-history"` | `200` |
 | a2 | La page contient le bon nom | `curl -s "https://plugins.jetbrains.com/plugin/<ID>-find-in-commit-history" \| grep -c "Find in Commit History"` | ≥ 1 |
 | a3 | L'API renvoie la bonne fiche | `curl -s "https://plugins.jetbrains.com/api/plugins/<ID>"` | `xmlId` = `com.tgglabs.pickaxe` · `name` = `Find in Commit History` · `pricingModel` = `FREE` · `isHidden` = `false` · `isBlocked` = `false` |
-| a4 | La version 0.0.1 est listée | `curl -s "https://plugins.jetbrains.com/api/plugins/<ID>/updates"` | un objet `version` = `0.0.1`, `approve` = `true`, `listed` = `true`, `since` = `262`, `size` = `3130623` |
+| a4 | La version 0.0.1 est listée | `curl -s "https://plugins.jetbrains.com/api/plugins/<ID>/updates"` | un objet `version` = `0.0.1`, `approve` = `true`, `listed` = `true`, `since` = `262`, `size` = `3133212` |
 | a5 | Les captures sont bien en ligne | `curl -s "https://plugins.jetbrains.com/api/plugins/<ID>"` → champ `screens` | **3** entrées (les 3 du § e) |
 | a6 | Le ZIP **servi par le Marketplace** est le nôtre | `curl -sL "https://plugins.jetbrains.com/plugin/download?pluginId=<ID>&version=0.0.1" -o /tmp/dl.zip && unzip -p /tmp/dl.zip '*/lib/FindinCommitHistory-0.0.1.jar' \| md5sum` | le md5 du **jar interne** = celui de notre ZIP. ⚠ **le md5 du ZIP servi ne sera pas forcément le nôtre** : le Marketplace réécrit le répertoire central (écart mesuré de 5 660 o sur le plugin 35416). Comparer le **jar**, pas l'enveloppe. |
 | a7 | **Le plugin se charge dans un vrai IDE** | installer le ZIP **téléchargé depuis le Marketplace** dans une config neuve de PyCharm 2026.2.4 et le lancer | ligne de log **exacte** : `Loaded custom plugins: Find in Commit History (0.0.1)` · **0** erreur sur `com.tgglabs.pickaxe` |
 | a8 | ⭐ **Le plugin a bien été « ajouté au Marketplace »** | sur la page du plugin, onglet **« Sales Info »** : le bouton « Add to Marketplace » a bien été actionné | ⚠ **l'upload seul ne suffit pas** : sans ce second geste, le plugin existe mais n'est pas en ligne (doc officielle « Release the plugin », § 5.1 de `MISE-VENTE-TGG.md`). Tant que `approve` = `false`, il n'est pas listé : c'est **normal**. |
 
-**Preuve à conserver** : `/work/preuves/cycle121/` (captures + log de l'IDE) et
-`/work/preuves/cycle122/` (captures **prises sur le ZIP livré**, rognées sur la fenêtre de l'IDE).
+**Preuve à conserver** : `/work/preuves/cycle124/` — captures **prises sur le ZIP livré**
+(`/work/preuves/cycle124/captures/`, 5 images de 1200 × 780 px, recadrées sur la fenêtre du
+dialogue) + `/work/preuves/cycle124/verification-captures.log` (contrôle pixel par pixel) +
+`/work/preuves/cycle124/preuves-v8/idecfg/log/idea.log` (chargement du plugin : « Loaded custom
+plugins: Find in Commit History (0.0.1) »).
 ⚠ Rappel d'expérience : la preuve IDE du cycle 120 a vérifié le **chargement** mais ses captures
 montraient l'écran d'accueil, pas le dialogue (le dialogue ne s'ouvrait pas dans le flux de captures).
 Il faut **explicitement** piloter l'ouverture du dialogue et le capturer.
@@ -120,20 +123,23 @@ promesse.
 
 ---
 
-## (e) Les 2 captures à ajouter à la page du Marketplace
+## (e) Les captures à ajouter à la page du Marketplace
 
-Si le formulaire d'upload (ou la section **Media** de la fiche) en demande **plus de 3** captures,
-ajouter celles-ci, dans cet ordre :
+Les **3 captures de la fiche** sont dans `MISE-VENTE-TGG.md` § 3 : elles sont prises sur le **ZIP
+livré** (05/11/2026, 21:45), font **1200 × 780 px** et ne montrent **que le dialogue du plugin**
+(pas de fond d'IDE, pas de bulle jaune) :
+`02-resultats.png` · `03-hash-copie.png` · `05-dialogue-filtre-chemin.png`
+(dossier : `/work/preuves/cycle124/captures/`).
+
+Si le formulaire en demande **plus de 3**, ajouter celles-ci, dans cet ordre :
 
 | # | Chemin exact | Ce qu'elle montre |
 |---|---|---|
-| 4 | `/work/preuves/cycle119/preuves5k/D2-02-chaine-saisiee.png` | le formulaire du plugin : **Search for**, **Mode** (`STRING`), **Path filter (optional)** — les 3 options |
-| 5 | `/work/preuves/cycle116/preuves/J1-15-filtre-git-log-chaine-distinctive.png` | le **filtre natif** de l'IDE (`Show Git Log` + la chaîne) qui ne trouve **rien** : c'est le problème que le plugin résout |
+| 4 | `/work/preuves/cycle124/captures/01-dialogue-chaine.png` | l'état initial du dialogue : la chaîne saisie, le mode `STRING`, le champ de filtre — liste encore vide |
+| 5 | `/work/preuves/cycle124/captures/04-verif-presse-papier.png` | le hash **recollé** dans le champ : la preuve que le presse-papier contient bien le hash copié par le double-clic |
 
-⚠ La capture n° 5 porte **deux bulles d'avertissement jaunes** de l'IDE (lanceur script + cache) :
-si la page du Marketplace les gêne, la recadrer ou la remplacer par
-`/work/preuves/cycle117/preuves/J1-45-dialogue-ouvert.png` (le dialogue tel qu'il s'ouvre, vide).
-Toutes font **1920 × 1200 px** (minimum officiel : 1200 × 760).
+⚠ Les anciennes captures n° 4 et n° 5 (cycles 116 et 119) sont **retirées** : la n° 5 portait deux
+bulles d'avertissement jaunes de l'IDE et les deux montraient le **fond d'IDE**.
 
 ---
 

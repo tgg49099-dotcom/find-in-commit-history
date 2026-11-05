@@ -2,8 +2,8 @@
 #
 # Plugin      : Find in Commit History (id com.tgglabs.pickaxe), version 0.0.1
 # Fichier     : build/distributions/FindinCommitHistory-0.0.1.zip
-# Taille      : 3 130 623 octets
-# Construit le: 2026-11-05 21:04:19 (CET), scripts/build_zip.sh (0 téléchargement,
+# Taille      : 3 133 212 octets
+# Construit le: 2026-11-05 21:39:58 (CET), scripts/build_zip.sh (0 téléchargement,
 #               0 $), compilé contre l'IDE local PyCharm 2026.2.4 (build 262.11879.98)
 #
 # ZIP REFAIT le 05/11/2026 à 20:08 après la REVUE DU JURY (demande `aba5`,
@@ -47,7 +47,21 @@
 #      ligne d'un Edit de JGit sont 0-based (le moteur testait donc bien la
 #      ligne réellement modifiée) ; test de non-régression ajouté.
 #
-# Suite de tests au moment de ce build : **47 tests, 47 verts**.
+#
+# ZIP REFAIT le 05/11/2026 a 21:39 (consigne du 05/11 21:50 : UNE seule
+# amelioration produit). Il contient, en plus de ce qui precede :
+#  12. la COPIE DU HASH : un double-clic dans la liste des resultats - ou le
+#      bouton « Copy hash » - met l'identifiant COMPLET du commit dans le
+#      presse-papier. La destination est `CopyPasteManager` (plateforme
+#      IntelliJ) ; NI l'API de suivi de version NI le plugin Git ne sont
+#      utilises (donc aucune dependance tierce signalee par le Plugin
+#      Verifier). Le code de copie est dans une classe sans dependance
+#      plateforme (`HashClipboard`), ce qui permet de le tester hors IDE.
+#
+# Suite de tests au moment de ce build : **55 tests, 55 verts** (47 avant la
+# copie du hash). Preuve rouge puis verte de la copie du hash :
+#   /work/preuves/cycle124/tests-ROUGE-copyhash.log  (3 tests rouges)
+#   /work/preuves/cycle124/tests-VERT-copyhash.log   (55/55 verts)
 #
 # NE PAS RECONSTRUIRE. Le md5 d'un ZIP JetBrains n'est PAS un critère de
 # reproductibilité garanti (mesuré le 04/11 par la mère : deux ZIP de même
@@ -70,7 +84,7 @@
 # ATTENTION : une empreinte qui ne correspond pas à cette valeur = le fichier
 # reçu n'est pas celui qui a été annoncé. Ne pas téléverser.
 
-95e5a91e705191f0a14e89eb6dd394add72ed576a1f7dac2242692fc6729e01f  build/distributions/FindinCommitHistory-0.0.1.zip
+9687a8551e4d4147558c772d34b9bffd888303921b12cac8e94ab45a415578d9  build/distributions/FindinCommitHistory-0.0.1.zip
 
 # md5 (32 hex) — commenter pour que « sha256sum -c SHA256.txt » n'affiche aucun avertissement :
-# ca8a353c8521c1e28d91303dd9573fd4
+# 00f2bc2495fcd34b7a46cc9da5e8a8d4

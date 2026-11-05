@@ -6,8 +6,7 @@
 > lu ou posé. Le plugin n'est **pas** publié au 05/11/2026 18:31.
 >
 > **Source de vérité** : `/work/pickaxe/` (code, `plugin.xml`, `SHA256.txt`, `FICHE-MARKETPLACE.md`).
-> Les empreintes ci-dessous sont celles du **ZIP livré** (reconstruit le 05/11 à 20:08
-> après la revue du jury `aba5`) : **ne pas reconstruire**.
+> Les empreintes ci-dessous sont celles du **ZIP livré** (reconstruit le 05/11 à 21:39 : revue du jury `aba5` + ajout de la copie du hash) : **ne pas reconstruire**.
 
 ---
 
@@ -16,10 +15,10 @@
 | | |
 |---|---|
 | **Chemin** | `/work/pickaxe/build/distributions/FindinCommitHistory-0.0.1.zip` |
-| Taille | **3 130 623 octets** (400 Mo max selon la doc officielle — large marge) |
-| Construit le | 2026-11-05 **21:04:19** CET (`scripts/build_zip.sh`, 0 téléchargement, 0 $), **après la revue du jury `aba5`** |
-| **md5** | `ca8a353c8521c1e28d91303dd9573fd4` |
-| **sha256** | `95e5a91e705191f0a14e89eb6dd394add72ed576a1f7dac2242692fc6729e01f` |
+| Taille | **3 133 212 octets** (400 Mo max selon la doc officielle — large marge) |
+| Construit le | 2026-11-05 **21:39:58** CET (`scripts/build_zip.sh`, 0 téléchargement, 0 $), **après la revue du jury `aba5` et l'ajout de la copie du hash** |
+| **md5** | `00f2bc2495fcd34b7a46cc9da5e8a8d4` |
+| **sha256** | `9687a8551e4d4147558c772d34b9bffd888303921b12cac8e94ab45a415578d9` |
 | Source | `/work/pickaxe/SHA256.txt` (source de vérité unique), § 8 de `FICHE-MARKETPLACE.md` |
 
 **Contrôle avant de cliquer « Submit »** (à faire sur la machine qui détient le fichier) :
@@ -28,10 +27,25 @@
 cd /work/pickaxe
 sha256sum -c SHA256.txt          # doit afficher : build/distributions/FindinCommitHistory-0.0.1.zip: OK
 md5sum    build/distributions/FindinCommitHistory-0.0.1.zip
-# attendu : ca8a353c8521c1e28d91303dd9573fd4
+# attendu : 00f2bc2495fcd34b7a46cc9da5e8a8d4
 ```
 
 ⚠ Une empreinte différente ⇒ **le fichier reçu n'est pas celui annoncé** : ne pas téléverser.
+### Ce que le ZIP livré contient (05/11 21:39)
+
+* **Copie du hash** : dans la liste des résultats, un **double-clic** (ou le bouton
+  **« Copy hash »**) met l'identifiant **complet** du commit dans le presse-papier.
+  Aucune API de suivi de version, aucun plugin tiers.
+* Les correctifs des cycles 122 et 123 : fusions non dupliquées, annulation réelle,
+  fuite de ressource fermée, blobs de plus de 64 Mo ignorés au lieu d'être
+  signalés à tort.
+
+⚠ La description et les change-notes du formulaire (champs 5 et 6) sont ceux du
+`plugin.xml`, qui n'a **pas** été modifié : ils ne mentionnent donc pas encore la copie
+du hash. **Arbitrage de la mère** : le `plugin.xml` n'est pas touché (le ZIP et le
+pré-vol sont figés) ; une éventuelle mention dans la fiche se fera dans une version
+ultérieure.
+
 ⚠ **Ne pas reconstruire le ZIP** : un rebuild change les empreintes et invalide le pré-vol
 officiel, qui n'est valable que 24 h.
 
@@ -56,7 +70,7 @@ Chaque ligne = **la valeur EXACTE à saisir** + **le fichier local d'où elle vi
 | 6 | **Change notes** | *ne rien réécrire* — `<change-notes>` du `plugin.xml` (1 189 car. bruts, **963 car. de texte réel**) | `plugin.xml` lignes 28–48 | Coller **exactement** le bloc ci-dessous. La mère : « copie-le, ne le réécris pas ». |
 | 7 | **License** (liste déroulante) | `MIT` | `/work/pickaxe/LICENSE` (1 065 o, texte MIT complet) + `FICHE-MARKETPLACE.md` § 4 | Décision de la mère du 05/11/2026. |
 | 8 | **License URL** | `https://labs.chiffreo.ch/find-in-commit-history-eula.html` | `/work/pickaxe/EULA.md` + consigne ; page en ligne | **HTTP 200, 4 253 o** (re-vérifié le 05/11/2026 18:31). Doc officielle : « You must provide your own end user license agreement ». |
-| 9 | **Source code URL** | `https://github.com/tgg49099-dotcom/find-in-commit-history` | consigne ; dépôt public `git remote` | commit du CODE **749162b384b86e68500a9f8cb5096e235bbf3cfd** (des commits de documentation peuvent être au-dessus), **61 fichiers** suivis (re-vérifié le 05/11 21:20). Obligatoire : licence open-source ⇒ lien du code source. |
+| 9 | **Source code URL** | `https://github.com/tgg49099-dotcom/find-in-commit-history` | consigne ; dépôt public `git remote` | commit du CODE **1dbbcb0eb9b9efc55e42a3f8f17760b7af3eb9ef** (des commits de documentation peuvent être au-dessus), **67 fichiers** suivis (re-vérifié le 05/11 21:20). Obligatoire : licence open-source ⇒ lien du code source. |
 | 10 | **Privacy policy URL** | `https://labs.chiffreo.ch/find-in-commit-history-privacy.html` | `FICHE-MARKETPLACE.md` § 5 (ligne `privacyPolicyUrl`) | **HTTP 200, 4 754 o** (re-vérifié le 05/11/2026 18:31). |
 | 11 | **Support / bug tracker URL** | `https://github.com/tgg49099-dotcom/find-in-commit-history/issues` | consigne ; `FICHE-MARKETPLACE.md` § 5 (`bugtrackerUrl`) | — |
 | 12 | **Category** | `VCS` | `FICHE-MARKETPLACE.md` § 3 ; API `GET /api/tags` → `{"id":250,"name":"VCS","link":"/tag/250-vcs"}` | **Tag officiel** de la liste du Marketplace (170 entrées). |
@@ -67,7 +81,7 @@ Chaque ligne = **la valeur EXACTE à saisir** + **le fichier local d'où elle vi
 | 17 | **Hidden** | **décoché** (plugin visible) | — | La case « hidden » garde le plugin caché même après approbation. |
 | 18 | **Ads / containsAds** | **non** (décoché) | — | Le plugin ne fait aucune communication commerciale. |
 | 19 | **File to upload** | `/work/pickaxe/build/distributions/FindinCommitHistory-0.0.1.zip` | § 0 ci-dessus | Le ZIP contient un seul dossier racine et les `.jar` dans `lib/`. |
-| 20 | **Media / captures** | les 3 fichiers du § 3 | `/work/preuves/` | ⚠ **le formulaire de dépôt ne prend PAS les captures** : la doc officielle dit qu'on les ajoute « *under the Media section in the admin panel of the plugin page **after uploading your plugin*** » → c'est l'étape 7. Taille mini recommandée : **1200 × 760 px**. Les 3 retenues font **1400 × 1000** ✓ (même format, pas de fond d'écran). |
+| 20 | **Media / captures** | les 3 fichiers du § 3 | `/work/preuves/` | ⚠ **le formulaire de dépôt ne prend PAS les captures** : la doc officielle dit qu'on les ajoute « *under the Media section in the admin panel of the plugin page **after uploading your plugin*** » → c'est l'étape 7. Taille mini recommandée : **1200 × 760 px**. Les 3 retenues font **1200 × 780** ✓ (recadrées sur le dialogue : **pas de fond d'IDE**). |
 
 ### Textes à copier tels quels (blocs 5 et 6)
 
@@ -140,7 +154,7 @@ Chaque ligne = **la valeur EXACTE à saisir** + **le fichier local d'où elle vi
 3. **Remplir le formulaire** — reprendre les 20 lignes du § 1, dans l'ordre des champs.
    Les blocs longs (5 et 6) se collent tels quels, **sans retouche**.
 4. **Déposer le ZIP** — joindre `/work/pickaxe/build/distributions/FindinCommitHistory-0.0.1.zip`
-   (3 130 623 o). **Ne pas zipper, renommer ni re-compresser** le fichier.
+   (3 133 212 o). **Ne pas zipper, renommer ni re-compresser** le fichier.
 5. **Options de distribution** — prix `Free`, canal par défaut, **pas** de canal custom,
    **hidden décoché**, **pas** d'ads, `since-build 262`, catégorie `VCS`,
    mots-clés `git pickaxe search history log`, puis joindre les **3 captures** du § 3.
@@ -154,21 +168,29 @@ Chaque ligne = **la valeur EXACTE à saisir** + **le fichier local d'où elle vi
 
 ## 3. Les 3 captures à joindre (si le formulaire en demande)
 
-Format **1920 × 1200 px** (au-dessus du minimum officiel 1200 × 760).
+**Prises sur le ZIP LIVRÉ** (md5 `00f2bc2495fcd34b7a46cc9da5e8a8d4`) le 05/11/2026 à 21:45, dans
+PyCharm 2026.2.4 (build 262.11879.98). Format **1200 × 780 px** (minimum officiel 1200 × 760) :
+le **dialogue du plugin remplit le cadre**, il n'y a **aucun fond d'IDE** (le recadrage est le
+rectangle exact de la fenêtre du dialogue) et **aucune bulle jaune**.
 
-| # | Chemin exact | Ce qu'elle montre | Pourquoi celle-là |
+| # | Chemin exact | Dimensions · md5 | Ce qu'elle montre |
 |---|---|---|---|
-| 1 | `/work/preuves/cycle117/preuves/J1-47-resultats.png` | le dialogue du plugin, chaîne `pi3rre-magique-7749` saisie, mode `STRING`, et **2 commits trouvés** (« c7e2bba fix: remove the token line [src/config.py] », « b8c5430 feat: add the configuration file [src/config.py] »), mention « **2 commits found.** » | **la capture qui dit tout** : la requête, le mode, et le résultat avec le hash et le message du commit |
-| 2 | `/work/preuves/cycle117/preuves/J1-48-find-action-retry.png` | la palette **Find Action** avec « Find in Commit History » tapé, l'action sélectionnée et sa description d'une ligne : « Search the Git history for commits that add or remove a string (git log -S / -G) » | **comment l'invoquer** (double Ctrl) + la promesse du plugin en une ligne |
-| 3 | `/work/preuves/cycle119/preuves5k/D2-00-menu-tools.png` | le menu **Tools** ouvert, entrée « **Find in Commit History…** » en bas | **le point d'entrée** dans le menu de l'IDE |
+| 1 | `/work/preuves/cycle124/captures/02-resultats.png` | 1200 × 780 · `6f57bc2956c4fdb3208eab898cb54206` | **la capture qui dit tout** : chaîne `pi3rre-magique-7749`, mode `STRING`, les **2 commits trouvés** (« eaf798cd fix: remove the token line [src/app.py] », « 54481bb feat: add the configuration file [src/app.py] »), mention « **2 commits found.** », et le bouton « **Copy hash** » en bas à droite |
+| 2 | `/work/preuves/cycle124/captures/03-hash-copie.png` | 1200 × 780 · `a45bf5d86ce47e31f10d68e38b4b782b` | **la nouveauté** : la 1ʳᵉ ligne est sélectionnée et la barre d'état affiche « **Hash copied to the clipboard: ea798cd8cbd537e83e93d55e228ea0cacfe67980** » — le double-clic a bien copié le hash |
+| 3 | `/work/preuves/cycle124/captures/05-dialogue-filtre-chemin.png` | 1200 × 780 · `7303a0778ada4df871457090f70871dc` | le **filtre de chemin** en action (`app\.py`) : la recherche se restreint aux fichiers choisis |
 
-*Ces captures viennent des preuves IDE des cycles 117 et 119 (PyCharm 2026.2.4) : l'interface du
-dialogue n'a pas changé depuis (D1/D2/D3 du cycle 119-120 n'ont touché que le comportement, pas
-l'affichage). Elles sont lisibles, sans notification parasite.*
+*Vérification pixel par pixel : `/work/preuves/cycle124/verification-captures.log` (dimensions
+exactes, md5 tous distincts, écart-type non nul = écran vivant, recadrage = rectangle de la
+fenêtre du dialogue ⇒ pas un pixel de fond d'IDE).*
 
-⚠ **À ne pas utiliser** : les captures du cycle 120 (`/work/preuves/cycle120/preuves-ide/J1-05…J1-09`).
-Elles ont bien été prises sur le ZIP livré, mais le dialogue **n'y apparaît pas** (l'IDE était
-sur l'écran d'accueil) et deux bulles d'avertissement jaune s'y superposent. Vérifié ce cycle.
+*Deux autres images, **techniques** (elles ne vont pas sur la fiche) :*
+`/work/preuves/cycle124/captures/01-dialogue-chaine.png` (état initial, liste vide) et
+`/work/preuves/cycle124/captures/04-verif-presse-papier.png` (**le hash recollé dans le champ** :
+preuve que le presse-papier contient bien le hash copié).
+
+⚠ **À ne plus utiliser** : les captures des cycles 117 / 119 / 120 reprises jusqu'ici — elles sont
+recadrées sur la **fenêtre de l'IDE** et montrent donc un **fond d'IDE**, ce que la doc
+officielle interdit (« Include desktop backgrounds … in your screenshots »).
 
 ---
 
