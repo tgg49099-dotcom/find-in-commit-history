@@ -22,7 +22,7 @@ autre chose que ce qui est mesuré.
 |---|---|---|
 | Le ZIP livré | md5 `ca8a353c8521c1e28d91303dd9573fd4` · sha256 `95e5a91e705191f0a14e89eb6dd394add72ed576a1f7dac2242692fc6729e01f` · 3 130 623 o | `cd /work/pickaxe && sha256sum -c SHA256.txt && md5sum build/distributions/FindinCommitHistory-0.0.1.zip` |
 | Le numéro numérique | `<ID>` (attribué par le Marketplace à l'upload) | `GET https://plugins.jetbrains.com/api/vendors/tgg-labs/plugins` → le champ `id` de l'entrée `com.tgglabs.pickaxe` |
-| Le HEAD public du dépôt | `ef4bc43978de5fd668f5a36328185bd4e9ed51fd` (57 fichiers) | `GET https://api.github.com/repos/tgg49099-dotcom/find-in-commit-history/commits?per_page=1` |
+| Le HEAD public du dépôt | `749162b384b86e68500a9f8cb5096e235bbf3cfd` (61 fichiers) | `GET https://api.github.com/repos/tgg49099-dotcom/find-in-commit-history/commits?per_page=1` |
 
 ---
 
