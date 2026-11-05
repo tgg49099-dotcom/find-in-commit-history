@@ -22,6 +22,24 @@
     </ul>
   ]]></description>
 
+  <!-- Notes de version : element racine de <idea-plugin>, affichees par le
+       Marketplace a la publication. Texte reel (le controle de pre-vol les
+       refuse si elles sont vides ou absentes). -->
+  <change-notes><![CDATA[
+    <p><b>First release.</b> Find the commits that added or removed a string in
+    your Git history — the <code>git log -S</code> / <code>git log -G</code>
+    ("pickaxe") search, inside your IDE.</p>
+    <ul>
+      <li>Type a string, get the commits that added or removed it, most recent
+      first — even if the string no longer exists in your working tree.</li>
+      <li>Match the diff itself with a regular expression
+      (<code>git log -G</code> semantics).</li>
+      <li>Restrict the search to a path; binary files are ignored.</li>
+      <li>The history is read locally from the repository on disk — nothing is
+      sent anywhere.</li>
+    </ul>
+  ]]></change-notes>
+
   <!-- Compatibilite : 262 = IntelliJ Platform 2026.2 (PyCharm 2026.2.4 =
        build 262.11879.98, mesure dans product-info.json).
        Aucune borne haute : le champ `pluginUntilBuild` a ete supprime de

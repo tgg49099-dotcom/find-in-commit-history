@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  pluginIcon.svg — logo du plugin « Find in Commit History » (variante CLAIRE).
+  Contraintes du Marketplace : 40x40, pas de reference externe, pas de police
+  externe. Le dessin est une pioche (« pickaxe ») : le manche et la tete.
+  Deux couleurs : manche gris anthracite, tete bleue.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none">
+  <path d="M8 29 Q20 19 32 29" stroke="#2F6FED" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M10 7 L19 23" stroke="#3D4451" stroke-width="4" stroke-linecap="round"/>
+</svg>

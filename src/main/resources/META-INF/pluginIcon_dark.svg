@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  pluginIcon_dark.svg — logo du plugin « Find in Commit History » (variante SOMBRE).
+  Meme dessin que pluginIcon.svg, couleurs brighten pour rester lisible sur le
+  fond sombre de l'IDE : manche gris clair, tete bleu clair.
+  Contraintes du Marketplace : 40x40, pas de reference externe, pas de police
+  externe.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none">
+  <path d="M8 29 Q20 19 32 29" stroke="#58A6FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M10 7 L19 23" stroke="#D0D7DE" stroke-width="4" stroke-linecap="round"/>
+</svg>

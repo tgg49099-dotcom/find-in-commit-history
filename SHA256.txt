@@ -1,0 +1,23 @@
+# SHA256.txt — EMPREINTES DU ZIP LIVRÉ (source de vérité unique)
+#
+# Plugin      : Find in Commit History (id com.tgglabs.pickaxe), version 0.0.1
+# Fichier     : build/distributions/FindinCommitHistory-0.0.1.zip
+# Taille      : 3 136 031 octets
+# Construit le: 2026-11-05 13:49 (CET), Gradle 8.10.2, `./gradlew --offline buildPlugin`
+#
+# Les deux empreintes ci-dessous sont celles du ZIP LIVRÉ (celles du fichier
+# réellement déposé sur le Marketplace). Le build est REPRODUCTIBLE : deux
+# builds du même source donnent le même ZIP, octet pour octet (contrôlé le
+# 05/11/2026, voir /work/preuves/cycle117/reproductibilite.log).
+#
+# Vérification sur la machine de qui reçoit le fichier :
+#   sha256sum -c SHA256.txt
+#   md5sum    build/distributions/FindinCommitHistory-0.0.1.zip
+#
+# ATTENTION : un md5 qui ne correspond pas à cette valeur = le fichier reçu
+# n'est pas celui qui a été Announcementé. Ne pas téléverser.
+
+164ca63168ad777a23d96297b2136983869640fe4e67cebd99a30c30bc18deba  build/distributions/FindinCommitHistory-0.0.1.zip
+
+# md5 (32 hex) :
+0e5a731f9241cff4de92517757b25cc9

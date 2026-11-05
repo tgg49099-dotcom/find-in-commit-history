@@ -1,6 +1,4 @@
-# Artefacts de build et dependances embarquees : jamais dans le depot.
-# (Tache Jules 15597185981936027315 : `.gitignore` complet ; fusionne avec
-#  celui qui existait deja au cycle 115, qui ignorait deja build/ et libs/.)
+# Build artifacts and embedded dependencies: never in the repository.
 .gradle/
 .intellijPlatform/
 build/
@@ -8,9 +6,13 @@ libs/
 .idea/
 *.iml
 
-# Journal du build Gradle officiel (cycle 116).
+# Third-party jars used by the offline test runner (downloadable with
+# scripts/fetch_deps.sh). They are not part of the plugin source code.
+tools/jgit-candidates/
+
+# Journal du build Gradle officiel.
 build-officiel.log
 
-# Jars JGit candidats : binaires tierces, telechargeables (scripts/fetch_deps.sh).
-# Ils ne font PAS partie du code source du plugin.
-tools/jgit-candidates/
+# Bytecode Python des scripts (jamais dans le depot).
+__pycache__/
+*.pyc

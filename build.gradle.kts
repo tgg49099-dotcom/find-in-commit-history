@@ -1,47 +1,32 @@
-// Pickaxe — build script.
+// Find in Commit History — build script.
 //
-// Slot 5 (JetBrains Marketplace). Produit : rechercher dans l'historique Git
-// les commits qui AJOUTENT ou SUPPRIMENT une chaine (equivalent de
-// `git log -S`) ou dont le DIFF matche une expression (equivalent de
-// `git log -G`).
-//
-// Demande d'origine : YouTrack IJPL-84839 « Wanted: Same functionality as
-// git log -S / git log -G available in "Find Commit" » (205 votes, ouvert
-// depuis le 26/06/2013).
-//
-// Meme pile que les plugins deja publies par ce slot (IntelliJ Platform
-// Gradle Plugin 2.7.2 + JDK 21), donc la recette est deja validee.
+// A plugin that searches the Git history for the commits that ADD or REMOVE a
+// string (the equivalent of `git log -S`) or whose DIFF matches a regular
+// expression (the equivalent of `git log -G`).
 //
 // ---------------------------------------------------------------------------
-// JGit : OU EST-IL ?
+// Why is JGit bundled?
 // ---------------------------------------------------------------------------
-// La consigne du 05/11/2026 disait « JGit, fourni par l'IDE : org.jetbrains.jgit,
-// ne pas embarquer de dependance lourde ». MESURE (05/11/2026, PyCharm
-// 2026.2.4 = build 262.11879.98) :
+// Measured on the jars of PyCharm 2026.2.4 (build 262.11879.98):
 //
-//   * `org.jetbrains.jgit` : 0 classe dans les 1 378 jars de l'IDE ;
-//   * `org.eclipse.jgit`   : 1 597 classes, mais dans UN SEUL jar —
-//     `lib/intellij.settingsSync.core.jar` — c'est-a-dire le jar du plugin
-//     « com.intellij.settingsSync », PAS le classpath de la plateforme
-//     (`bootClassPathJarNames` = 263 entrees, aucune ne contient
-//     « settingsSync ») ;
-//   * le plugin Git de l'IDE (`vcs-git`, id `Git4Idea`) ne reference
-//     AUCUNE classe `org/eclipse/jgit` (0 occurrence sur 4 500 classes) :
-//     il a ete reecrit en Rust.
+//   * `org.jetbrains.jgit`: 0 class in the 1,378 jars of the IDE;
+//   * `org.eclipse.jgit`  : present, but only inside `lib/intellij.settingsSync.core.jar`
+//     — the jar of the "Settings Sync" plugin, NOT the platform classpath
+//     (`bootClassPathJarNames` = 263 entries, none of them "settingsSync");
+//   * the IDE's own Git plugin (`Git4Idea`) references no `org/eclipse/jgit`
+//     class at all (it has been rewritten in Rust).
 //
-// Consequence : un plugin tiers NE VOIT PAS JGit, sauf a declarer une
-// dependance sur « com.intellij.settingsSync » — c'est-a-dire a rendre
-// obligatoire un plugin que l'utilisateur peut desactiver, sans rapport avec
-// la gestion de version. On embarque donc JGit (3,2 Mo), dans la version
-// EXACTE que l'IDE utilise lui-meme (6.10.1) : c'est le seul moyen d'avoir
-// un plugin autonome qui marche partout. Le rapport du cycle mesure le poids
-// reel du ZIP.
+// A third-party plugin therefore does not see JGit, unless it declares a
+// dependency on "com.intellij.settingsSync" — i.e. it would make a plugin the
+// user can disable mandatory, which has nothing to do with version control.
+// JGit is therefore bundled, in the exact version the IDE itself uses (6.10.1).
 //
-// `org.slf4j` (API) est fourni par la plateforme (`util-8.jar`) : il n'est
-// donc PAS embarque. `commons-codec` est egalement fourni par la plateforme
-// (`intellij.libraries.commons.codec.jar`). JavaEWAH, lui, n'y est pas :
-// il est embarque (64 Ko).
+// `org.slf4j` (API) and `commons-codec` are provided by the platform
+// (`util-8.jar`, `intellij.libraries.commons.codec.jar`), so they are NOT
+// bundled. JavaEWAH is not: it is bundled (~170 KB).
 // ---------------------------------------------------------------------------
+
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
 
 plugins {
     java
@@ -60,48 +45,52 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        // IDE de compilation, deux facons (mesurees le 05/11/2026) :
+        // The IDE to compile against, two ways:
         //
-        //  - `-PplatformLocalPath=/work/ide/pycharm-2026.2.4` : compile
-        //    CONTRE l'IDE deja installe dans le conteneur. ZERO
-        //    telechargement, et le `since-build` 262 est alors l'EXACT
-        //    numero de build de l'IDE compile (262.11879.98).
-        //  - sinon : `create("PY", platformVersion)` telecharge l'IDE
-        //    depuis le CDN JetBrains (necessite le reseau).
+        //  - `-PplatformLocalPath=/path/to/ide` : compile AGAINST a local IDE
+        //    installation. Nothing is downloaded, and `since-build` is then the
+        //    exact build number of the IDE that was compiled against.
+        //  - otherwise: `create("PY", platformVersion)` downloads the IDE from
+        //    the JetBrains CDN (requires the network).
         //
-        // La premiere forme est celle du build hors ligne : elle garantit
-        // que le ZIP livre est compile contre la MEME plateforme que
-        // celle annoncee dans `since-build`.
+        // The first form is what an offline build uses.
         val localIdePath = (project.findProperty("platformLocalPath") as String?)?.trim()
         if (!localIdePath.isNullOrEmpty()) {
             local(file(localIdePath))
         } else {
             create("PY", (project.findProperty("platformVersion") as String?) ?: "2026.2.4")
         }
+
+        // JetBrains Plugin Verifier (the `verifyPlugin` task).
+        // The `verifier-cli` artifact is not in every local Gradle cache: in
+        // `--offline` mode that task fails with "No cached version of
+        // org.jetbrains.intellij.plugins:verifier-cli ... available for offline
+        // mode". The declaration is kept here because it does not weigh on
+        // `buildPlugin` (it is resolved only by `verifyPlugin`) and because it
+        // makes the task usable as soon as a network is available.
+        pluginVerifier()
     }
 
-    // JGit : embarque (voir le bloc de commentaire ci-dessus).
-    // 6.10.1.202505221210-r est EXACTEMENT la version presente dans
-    // l'IDE 2026.2.4 (compare classe par classe : 1 594 classes communes
-    // sur 1 597).
+    // JGit — bundled (see the header of this file).
+    // 6.10.1.202505221210-r is EXACTLY the version used by the IDE 2026.2.4
+    // (1,594 common classes out of 1,597).
     implementation("org.eclipse.jgit:org.eclipse.jgit:6.10.1.202505221210-r") {
-        // MESURE du 05/11/2026 (build Gradle officiel, `unzip -l` du ZIP
-        // produit SANS ces exclusions) : le ZIP embarquait 5 jars, dont
-        //   - slf4j-api-1.7.36.jar  -> INTERDIT par JetBrains (la plateforme
-        //     fournit org.slf4j dans util-8.jar) ;
-        //   - commons-codec-1.17.0.jar -> fourni par la plateforme
-        //     (intellij.libraries.commons.codec.jar).
-        // Ces deux-la sont donc des dependances TRANSITIVES de JGit a
-        // exclure : c'est ce que fait le script hors reseau du cycle 115.
+        // These two are TRANSITIVE dependencies of JGit, and both are provided
+        // by the platform:
+        //   - slf4j-api         -> forbidden by JetBrains (the platform ships
+        //                          org.slf4j in util-8.jar);
+        //   - commons-codec     -> provided by the platform
+        //                          (intellij.libraries.commons.codec.jar).
+        // Bundling them would make the plugin distribution rejected.
         exclude(group = "org.slf4j", module = "slf4j-api")
         exclude(group = "commons-codec", module = "commons-codec")
     }
     implementation("com.googlecode.javaewah:JavaEWAH:1.1.12")
 
-    // slf4j-api n'est plus resolu par la dependance JGit (exclu ci-dessus) :
-    // il faut le remettre explicitement pour la CLASSE DE TEST, sinon JGit
-    // ne trouve pas org.slf4j.LoggerFactory au runtime des tests.
-    // `testImplementation` n'est JAMAIS embarque dans le ZIP.
+    // slf4j-api is no longer resolved through the JGit dependency (excluded
+    // above): it has to be brought back explicitly for the TEST classpath,
+    // otherwise JGit cannot find org.slf4j.LoggerFactory at test runtime.
+    // `testImplementation` is NEVER bundled in the distribution ZIP.
     testImplementation("org.slf4j:slf4j-api:2.0.13")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.2")
@@ -109,22 +98,28 @@ dependencies {
 }
 
 intellijPlatform {
-    // Instrumentation du bytecode par JetBrains : DESACTIVEE, et c'est une
-    // decision mesuree.
+    // JetBrains bytecode instrumentation: DISABLED, and this is a measured
+    // decision.
     //
-    // MESURE du 05/11/2026 : la tache `:instrumentCode` resout
-    // `com.jetbrains.intellij.java:java-compiler-ant-tasks:262.11879.98`
-    // depuis Maven. En mode `--offline` (conteneur sans acces au CDN
-    // JetBrains) cet artefact N'EST PAS dans le cache (seule la version
-    // 243.21565.199 y est) -> le build echoue :
-    //   No cached version of com.jetbrains.intellij.java:java-compiler-ant-tasks:262.11879.98
-    //   available for offline mode.
-    //
-    // Consequence de la desactivation : le jar du plugin ne contient pas
-    // les assertions `@NotNull` injectees par l'instrumentation. Elles ne
-    // servent qu'a detecter des violations de contrat en developpement ;
-    // le comportement du plugin a l'execution est identique.
+    // The `:instrumentCode` task resolves
+    // `com.jetbrains.intellij.java:java-compiler-ant-tasks:<version>` from
+    // Maven. In `--offline` mode that artifact is usually not in the local
+    // cache, and the build fails. Disabling it means the plugin jar does not
+    // contain the injected `@NotNull` assertions: they only matter to catch
+    // contract violations during development, the runtime behaviour of the
+    // plugin is identical.
     instrumentCode = false
+
+    // Plugin Verifier: it is given the LOCAL IDE, so that nothing is
+    // downloaded. The task checks the ZIP against the code of that IDE.
+    pluginVerification {
+        ides {
+            val localIdePath = (project.findProperty("platformLocalPath") as String?)?.trim()
+            if (!localIdePath.isNullOrEmpty()) {
+                local(file(localIdePath))
+            }
+        }
+    }
 
     pluginConfiguration {
         id = "com.tgglabs.pickaxe"
@@ -132,11 +127,8 @@ intellijPlatform {
         version = project.version.toString()
         ideaVersion {
             sinceBuild = (project.findProperty("pluginSinceBuild") as String?) ?: "262"
-            // `until-build` : on ne l'ecrit QUE si la propriete existe ET
-            // n'est pas vide. Le champ `pluginUntilBuild` a ete SUPPRIME de
-            // `gradle.properties` le 05/11/2026 : le XML genere ne doit donc
-            // contenir AUCUN attribut `until-build`
-            // (verifie dans le ZIP livre, pas dans le source).
+            // `until-build` is written ONLY if the property exists AND is not
+            // empty: the plugin declares no upper bound.
             val configuredUntilBuild = (project.findProperty("pluginUntilBuild") as String?)?.trim()
             if (!configuredUntilBuild.isNullOrEmpty()) {
                 untilBuild = configuredUntilBuild
@@ -148,47 +140,33 @@ intellijPlatform {
             url = (project.findProperty("pluginVendorUrl") as String?) ?: "https://plugins.jetbrains.com/vendor/tgg-labs"
         }
     }
-    // Aucune publication depuis ce build : le jeton n'est meme pas lu ici.
-    // `publishPlugin` / `uploadPlugin` ne doivent JAMAIS etre lances sans
-    // l'accord du proprietaire (cf. NOTES.md).
+    // No publication from this build: the token is not even read here.
+    // `publishPlugin` / `uploadPlugin` must NEVER be run without the explicit
+    // agreement of the repository owner.
     publishing {
         token = System.getenv("JETBRAINS_MARKETPLACE_TOKEN")
     }
 }
 
-// Bytecode Java 21.
-//
-// MESURES du 05/11/2026 (elles CHANGENT la conclusion du cycle 116) :
-//   * `product-info.json` de PyCharm 2026.2.4 (build 262.11879.98) dit
-//     « minRequiredJavaVersion » = 25 : un plugin dont le `since-build` est
-//     262 ne peut donc JAMAIS tourner sur un JVM 17 ;
-//   * les plugins embarques dans cet IDE sont compiles majoritairement en
-//     major 65 = Java 21 (1 530 classes mesurees), major 69 = Java 25
-//     (1 120 classes) : Java 21 est le niveau de reference de la plateforme.
-// Le refus du cycle 116 (« 17 est le format demande pour since-build 243 »)
-// n'a donc plus de fondement : le `since-build` est passe a 262.
-// C'est pourquoi le hunk de Jules (tache 15597185981936027315) est
-// APPLIQUE ici, et non refuse.
-// Compilateur : Java 25 minimum, OUTREMENT que le bytecode produit.
-//
-// MESURE du 05/11/2026 : les classes de la plateforme 2026.2.4 sont en
-// « major version 69 » (Java 25) — par exemple
+// ---------------------------------------------------------------------------
+// Java toolchain
+// ---------------------------------------------------------------------------
+// The IDE 2026.2.4 classes are in "class file 69" (Java 25) — for example
 // `lib/intellij.platform.ide.jar(/com/intellij/openapi/ui/DialogWrapper.class)`.
-// Un `javac` 21 refuse de les lire :
+// A `javac` 21 refuses to read them:
 //   bad class file: .../DialogWrapper.class
 //   class file has wrong version 69.0, should be 65.0
-// -> 38 erreurs de compilation. Le compilateur DOIT donc etre un JDK 25.
+// -> the compiler MUST be a JDK 25.
 //
-// Ce n'est PAS le JDK 25 de la machine : c'est le JBR (JetBrains Runtime)
-// deja installe DANS l'IDE de reference, que Gradle detecte comme
-// toolchain via :
-//   -Porg.gradle.java.installations.paths=/work/ide/pycharm-2026.2.4/jbr
-// (Gradle 8.10.2, lui, ne peut PAS tourner sur un JVM 25 : mesure,
-// « Unsupported class file major version 69 » — le daemon reste donc sur
-// le JDK 21.)
+// It is not a JDK 25 installed on the machine: it is the JetBrains Runtime
+// (JBR) that ships INSIDE the IDE, which Gradle picks up as a toolchain via
+//   -Porg.gradle.java.installations.paths=/path/to/ide/jbr
+// (Gradle 8.10.2 itself cannot run on a JVM 25: "Unsupported class file major
+// version 69" — the daemon stays on JDK 21.)
 //
-// Le BYTECODE produit reste en Java 21 (`sourceCompatibility`/`targetCompatibility`),
-// comme le demande la plateforme pour un plugin `since-build 262`.
+// The PRODUCED bytecode stays at Java 21 (`sourceCompatibility` /
+// `targetCompatibility` = 21), which is the reference level of the platform
+// for a plugin with `since-build 262`.
 java {
     toolchain {
         languageVersion.set(
@@ -203,8 +181,7 @@ tasks.withType<JavaCompile>().configureEach {
     options.encoding = "UTF-8"
 }
 
-// Les tests sont des tests de moteur pur (JGit), pas des tests d'IDE :
-// ils n'ont besoin d'aucune classe de la plateforme.
+// The tests are pure engine tests (JGit): they need no class of the platform.
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
     systemProperty("java.awt.headless", "true")
@@ -215,11 +192,24 @@ tasks.withType<Test>().configureEach {
     }
 }
 
-// `buildSearchableOptions` lance un IDE complet en arriere-plan pour indexer
-// les pages de REGLAGES. Ce plugin n'a AUCUNE page de reglages : l'index
-// serait vide. La tache a deja TUE un build dans ce conteneur (exit 137 =
-// SIGKILL de l'OOM, conteneur plafonne a 1 572 864 000 octets). On la
-// desactive : elle n'apporte rien ici.
+// `buildSearchableOptions` starts a full IDE in the background to index the
+// SETTINGS pages. This plugin has NO settings page: the index would be empty.
+// The task is disabled: it brings nothing here.
 tasks.matching { it.name == "buildSearchableOptions" }.configureEach {
     enabled = false
+}
+
+// ---------------------------------------------------------------------------
+// REPRODUCIBLE ZIP
+// ---------------------------------------------------------------------------
+// The SHA-256 of the released ZIP is published in `SHA256.txt`. By default
+// Gradle writes the TIMESTAMP of every entry of the ZIP: the hash then changes
+// at every build, and the documented hash becomes stale after the first
+// rebuild.
+//
+// These two options remove the timestamps and sort the entries: two builds of
+// the same sources then produce the SAME ZIP, byte for byte.
+tasks.withType<AbstractArchiveTask>().configureEach {
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
 }

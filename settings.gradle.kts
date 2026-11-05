@@ -1,7 +1,7 @@
-// Nom du projet Gradle = nom du ZIP produit par `buildPlugin` (mesure du
-// 05/11/2026 : le ZIP s'appelle `<rootProject.name>-<version>.zip`).
-// On y met le nom public du plugin, sans espace ni ponctuation, comme sur le
-// Marketplace : « Find in Commit History » -> FindinCommitHistory-0.0.1.zip.
-// C'est ce qui rend coherents les 4 identifiants : <name> de plugin.xml,
-// xmlId, nom du ZIP et nom de l'action.
+// The name of the Gradle project is the name of the ZIP produced by
+// `buildPlugin` (measured: the ZIP is called `<rootProject.name>-<version>.zip`).
+// It holds the public name of the plugin, without space nor punctuation, as on
+// the Marketplace: "Find in Commit History" -> FindinCommitHistory-0.0.1.zip.
+// This is what keeps the four identifiers consistent: the <name> of plugin.xml,
+// the xmlId, the name of the ZIP and the label of the action.
 rootProject.name = "FindinCommitHistory"
