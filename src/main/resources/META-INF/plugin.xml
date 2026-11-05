@@ -22,7 +22,15 @@
     </ul>
   ]]></description>
 
-  <idea-version since-build="243" until-build="263.*"/>
+  <!-- Compatibilite : 262 = IntelliJ Platform 2026.2 (PyCharm 2026.2.4 =
+       build 262.11879.98, mesure dans product-info.json).
+       Aucune borne haute : le champ `pluginUntilBuild` a ete supprime de
+       gradle.properties le 05/11/2026, donc l'attribut correspondant est
+       absent du XML genere. Le plugin ne depend que de
+       `com.intellij.modules.platform`, dont l'API publique n'a pas bouge
+       depuis 2024.3 : une borne haute serait une restriction sans
+       raison mesurable. -->
+  <idea-version since-build="262"/>
 
   <depends>com.intellij.modules.platform</depends>
 

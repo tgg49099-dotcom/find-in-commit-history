@@ -60,9 +60,24 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        // PyCharm Professional 2024.3 : deja dans le cache Gradle du
-        // conteneur, le build ne telecharge rien de gros.
-        create("PY", (project.findProperty("platformVersion") as String?) ?: "2024.3")
+        // IDE de compilation, deux facons (mesurees le 05/11/2026) :
+        //
+        //  - `-PplatformLocalPath=/work/ide/pycharm-2026.2.4` : compile
+        //    CONTRE l'IDE deja installe dans le conteneur. ZERO
+        //    telechargement, et le `since-build` 262 est alors l'EXACT
+        //    numero de build de l'IDE compile (262.11879.98).
+        //  - sinon : `create("PY", platformVersion)` telecharge l'IDE
+        //    depuis le CDN JetBrains (necessite le reseau).
+        //
+        // La premiere forme est celle du build hors ligne : elle garantit
+        // que le ZIP livre est compile contre la MEME plateforme que
+        // celle annoncee dans `since-build`.
+        val localIdePath = (project.findProperty("platformLocalPath") as String?)?.trim()
+        if (!localIdePath.isNullOrEmpty()) {
+            local(file(localIdePath))
+        } else {
+            create("PY", (project.findProperty("platformVersion") as String?) ?: "2026.2.4")
+        }
     }
 
     // JGit : embarque (voir le bloc de commentaire ci-dessus).
@@ -94,13 +109,38 @@ dependencies {
 }
 
 intellijPlatform {
+    // Instrumentation du bytecode par JetBrains : DESACTIVEE, et c'est une
+    // decision mesuree.
+    //
+    // MESURE du 05/11/2026 : la tache `:instrumentCode` resout
+    // `com.jetbrains.intellij.java:java-compiler-ant-tasks:262.11879.98`
+    // depuis Maven. En mode `--offline` (conteneur sans acces au CDN
+    // JetBrains) cet artefact N'EST PAS dans le cache (seule la version
+    // 243.21565.199 y est) -> le build echoue :
+    //   No cached version of com.jetbrains.intellij.java:java-compiler-ant-tasks:262.11879.98
+    //   available for offline mode.
+    //
+    // Consequence de la desactivation : le jar du plugin ne contient pas
+    // les assertions `@NotNull` injectees par l'instrumentation. Elles ne
+    // servent qu'a detecter des violations de contrat en developpement ;
+    // le comportement du plugin a l'execution est identique.
+    instrumentCode = false
+
     pluginConfiguration {
         id = "com.tgglabs.pickaxe"
         name = (project.findProperty("pluginName") as String?) ?: "Find in Commit History"
         version = project.version.toString()
         ideaVersion {
-            sinceBuild = (project.findProperty("pluginSinceBuild") as String?) ?: "243"
-            untilBuild = (project.findProperty("pluginUntilBuild") as String?) ?: "263.*"
+            sinceBuild = (project.findProperty("pluginSinceBuild") as String?) ?: "262"
+            // `until-build` : on ne l'ecrit QUE si la propriete existe ET
+            // n'est pas vide. Le champ `pluginUntilBuild` a ete SUPPRIME de
+            // `gradle.properties` le 05/11/2026 : le XML genere ne doit donc
+            // contenir AUCUN attribut `until-build`
+            // (verifie dans le ZIP livre, pas dans le source).
+            val configuredUntilBuild = (project.findProperty("pluginUntilBuild") as String?)?.trim()
+            if (!configuredUntilBuild.isNullOrEmpty()) {
+                untilBuild = configuredUntilBuild
+            }
         }
         vendor {
             name = (project.findProperty("pluginVendorName") as String?) ?: "Tgg Labs"
@@ -116,17 +156,50 @@ intellijPlatform {
     }
 }
 
-// Bytecode Java 17 : format impose par la plateforme (build 243+).
-// MESURE du 05/11/2026 : le jar produit par le build Gradle officiel est en
-// « major version 61 » = Java 17, exactement comme le ZIP construit a la main
-// du cycle 115. Une proposition de Jules (tache 15597185981936027315) faisait
-// passer le bytecode en Java 21 : REFUSEE, parce qu'elle aurait rendu les deux
-// ZIP non identiques (class file 65 au lieu de 61) alors qu'aucune mesure ne
-// l'exige, et que 17 est le format demande par la plateforme pour un plugin
-// `since-build 243`.
+// Bytecode Java 21.
+//
+// MESURES du 05/11/2026 (elles CHANGENT la conclusion du cycle 116) :
+//   * `product-info.json` de PyCharm 2026.2.4 (build 262.11879.98) dit
+//     « minRequiredJavaVersion » = 25 : un plugin dont le `since-build` est
+//     262 ne peut donc JAMAIS tourner sur un JVM 17 ;
+//   * les plugins embarques dans cet IDE sont compiles majoritairement en
+//     major 65 = Java 21 (1 530 classes mesurees), major 69 = Java 25
+//     (1 120 classes) : Java 21 est le niveau de reference de la plateforme.
+// Le refus du cycle 116 (« 17 est le format demande pour since-build 243 »)
+// n'a donc plus de fondement : le `since-build` est passe a 262.
+// C'est pourquoi le hunk de Jules (tache 15597185981936027315) est
+// APPLIQUE ici, et non refuse.
+// Compilateur : Java 25 minimum, OUTREMENT que le bytecode produit.
+//
+// MESURE du 05/11/2026 : les classes de la plateforme 2026.2.4 sont en
+// « major version 69 » (Java 25) — par exemple
+// `lib/intellij.platform.ide.jar(/com/intellij/openapi/ui/DialogWrapper.class)`.
+// Un `javac` 21 refuse de les lire :
+//   bad class file: .../DialogWrapper.class
+//   class file has wrong version 69.0, should be 65.0
+// -> 38 erreurs de compilation. Le compilateur DOIT donc etre un JDK 25.
+//
+// Ce n'est PAS le JDK 25 de la machine : c'est le JBR (JetBrains Runtime)
+// deja installe DANS l'IDE de reference, que Gradle detecte comme
+// toolchain via :
+//   -Porg.gradle.java.installations.paths=/work/ide/pycharm-2026.2.4/jbr
+// (Gradle 8.10.2, lui, ne peut PAS tourner sur un JVM 25 : mesure,
+// « Unsupported class file major version 69 » — le daemon reste donc sur
+// le JDK 21.)
+//
+// Le BYTECODE produit reste en Java 21 (`sourceCompatibility`/`targetCompatibility`),
+// comme le demande la plateforme pour un plugin `since-build 262`.
+java {
+    toolchain {
+        languageVersion.set(
+            JavaLanguageVersion.of((project.findProperty("javaToolchainVersion") as String?) ?: "25")
+        )
+    }
+}
+
 tasks.withType<JavaCompile>().configureEach {
-    sourceCompatibility = "17"
-    targetCompatibility = "17"
+    sourceCompatibility = "21"
+    targetCompatibility = "21"
     options.encoding = "UTF-8"
 }
 

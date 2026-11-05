@@ -10,3 +10,7 @@ libs/
 
 # Journal du build Gradle officiel (cycle 116).
 build-officiel.log
+
+# Jars JGit candidats : binaires tierces, telechargeables (scripts/fetch_deps.sh).
+# Ils ne font PAS partie du code source du plugin.
+tools/jgit-candidates/
