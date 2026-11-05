@@ -2,6 +2,7 @@ package com.tgglabs.pickaxe.ui;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
+import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task;
@@ -26,6 +27,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.DefaultListModel;
+import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.ListModel;
@@ -33,8 +35,13 @@ import java.awt.BorderLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.datatransfer.StringSelection;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
@@ -52,6 +59,12 @@ import java.util.function.BooleanSupplier;
  * EDT (celui de Swing). Sur un gros depot elle gelerait l'IDE. Elle est donc
  * confiee a une tache de fond, et son resultat est applique au modele dans
  * {@code invokeLater} (donc sur l'EDT).</p>
+ *
+ * <p>Copie du hash : un double-clic dans la liste des resultats — ou le
+ * bouton « Copy hash » — met le hash du commit selectionne dans le
+ * presse-papier. La copie passe par {@link HashClipboard}, qui ne depend que
+ * de l'engine : aucune API de suivi de version, aucun plugin tiers. La
+ * destination est le presse-papier de la plateforme.</p>
  */
 public class PickaxeDialog extends DialogWrapper {
 
@@ -64,6 +77,20 @@ public class PickaxeDialog extends DialogWrapper {
             new ComboBox<>(new PickaxeMode[]{PickaxeMode.STRING, PickaxeMode.REGEX});
     private final JBList<String> resultList = new JBList<>();
     private final JBLabel statusLabel = new JBLabel(" ");
+
+    /**
+     * Les resultats de la DERNIERE recherche, dans l'ordre de la liste
+     * affichee : c'est eux qui portent le hash a copier. La liste et le
+     * modele sont toujours mis a jour ensemble (voir {@code showResults}).
+     */
+    private List<PickaxeHit> lastHits = Collections.emptyList();
+
+    /**
+     * Presse-papier. La destination est injectee : le code de copie reste
+     * ainsi testable HORS IDE (cf. {@link HashClipboard} et ses tests).
+     */
+    private final HashClipboard clipboard = new HashClipboard(
+            text -> CopyPasteManager.getInstance().setContents(new StringSelection(text)));
 
     public PickaxeDialog(@Nullable Project project, @NotNull Path repositoryRoot) {
         super(project, false);
@@ -113,10 +140,30 @@ public class PickaxeDialog extends DialogWrapper {
         JBScrollPane scroll = new JBScrollPane(resultList);
         scroll.setPreferredSize(new java.awt.Dimension(520, 220));
 
+        // Double-clic sur un resultat : le hash de ce commit part dans le
+        // presse-papier. Le premier clic du double-clic a deja selectionne
+        // la ligne : `getSelectedIndex()` est donc le resultat vise.
+        resultList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    copySelectedHash();
+                }
+            }
+        });
+
+        JButton copyHashButton = new JButton("Copy hash");
+        copyHashButton.setToolTipText("Copy the full hash of the selected commit to the clipboard");
+        copyHashButton.addActionListener(e -> copySelectedHash());
+
+        JPanel south = new JPanel(new BorderLayout(8, 0));
+        south.add(statusLabel, BorderLayout.CENTER);
+        south.add(copyHashButton, BorderLayout.EAST);
+
         JPanel root = new JPanel(new BorderLayout(0, 6));
         root.add(form, BorderLayout.NORTH);
         root.add(scroll, BorderLayout.CENTER);
-        root.add(statusLabel, BorderLayout.SOUTH);
+        root.add(south, BorderLayout.SOUTH);
         return root;
     }
 
@@ -187,7 +234,7 @@ public class PickaxeDialog extends DialogWrapper {
                     // L'indicateur de la tache de fond est le signal
                     // d'annulation : le moteur le teste a chaque commit et a
                     // chaque entree de la boucle de diff. « Cancel » arrete
-                    // donc vraiment le parcours, au lieu de n'etre qu'un
+                    // donc vraiment le parcours, au lieu d'n'etre qu'un
                     // decoratif.
                     hits = search(needle, mode, pathFilter, indicator::isCanceled);
                 } catch (PickaxeException ex) {
@@ -219,13 +266,42 @@ public class PickaxeDialog extends DialogWrapper {
 
     /** Applique le resultat au modele. Appele sur l'EDT. */
     private void showResults(List<PickaxeHit> hits) {
+        List<PickaxeHit> resultats = hits == null
+                ? Collections.emptyList()
+                : new ArrayList<>(hits);
         DefaultListModel<String> model = new DefaultListModel<>();
-        for (PickaxeHit hit : hits) {
+        for (PickaxeHit hit : resultats) {
             model.addElement(hit.getShortId() + "  " + hit.getSubject()
                     + (hit.getPaths().isEmpty() ? "" : "  [" + String.join(", ", hit.getPaths()) + "]"));
         }
         resultList.setModel(model);
-        setStatus(hits.size() + (hits.size() == 1 ? " commit found." : " commits found."), false);
+        // La liste des hashs suit la liste affichee : meme ordre, meme
+        // longueur. Le double-clic et le bouton copient donc bien le hash du
+        // resultat surligne.
+        lastHits = resultats;
+        setStatus(resultats.size() + (resultats.size() == 1 ? " commit found." : " commits found."), false);
+    }
+
+    /**
+     * Copie dans le presse-papier le hash du commit selectionne.
+     *
+     * <p>Appele par le bouton « Copy hash » et par un double-clic dans la
+     * liste des resultats. Copie l'identifiant COMPLET du commit : git
+     * accepte l'abrege comme le complet, mais le complet est le seul qui ne
+     * soit jamais ambigu.</p>
+     *
+     * <p>Ne leve jamais d'exception vers l'IDE : si rien n'est selectionne,
+     * le dialogue affiche simplement un message.</p>
+     */
+    private void copySelectedHash() {
+        int index = resultList.getSelectedIndex();
+        String hash = HashClipboard.hashAt(lastHits, index);
+        if (hash == null) {
+            setStatus("Select a commit in the list first.", true);
+            return;
+        }
+        clipboard.copyHashAt(lastHits, index);
+        setStatus("Hash copied to the clipboard: " + hash, false);
     }
 
     /**

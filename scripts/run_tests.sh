@@ -32,6 +32,17 @@ elif command -v javac >/dev/null 2>&1; then
     JAVAC="$(command -v javac)"
     JAVA="$(command -v java)"
 else
+    # Le conteneur n'a PAS de JDK dans le PATH : le JDK utilise est celui
+    # embarque dans l'IDE (JBR), comme dans scripts/build_zip.sh.
+    for candidate in "$ROOT"/../ide/*/jbr/bin/javac; do
+        if [ -x "$candidate" ]; then
+            JAVAC="$candidate"
+            JAVA="$(dirname "$candidate")/java"
+            break
+        fi
+    done
+fi
+if [ -z "$JAVAC" ]; then
     for candidate in /usr/lib/jvm/*/bin/javac; do
         if [ -x "$candidate" ]; then
             JAVAC="$candidate"
@@ -91,6 +102,10 @@ rm -rf "$BUILD/classes" "$BUILD/test-classes"
 mkdir -p "$BUILD/classes" "$BUILD/test-classes" "$BUILD/tmp"
 find "$ROOT/src/main/java/com/tgglabs/pickaxe/engine" -name "*.java" > "$BUILD/main-sources.txt"
 echo "$ROOT/src/main/java/com/tgglabs/pickaxe/GitRepositoryLocator.java" >> "$BUILD/main-sources.txt"
+# HashClipboard est la SEULE classe de l'interface compilee hors IDE : elle
+# ne depend que de l'engine (aucune API de la plateforme), ce qui permet de
+# tester la fonction « double-clic = copier le hash » sans lancer l'IDE.
+echo "$ROOT/src/main/java/com/tgglabs/pickaxe/ui/HashClipboard.java" >> "$BUILD/main-sources.txt"
 "$JAVAC" -encoding UTF-8 --release 17 -nowarn -cp "$CP" -d "$BUILD/classes" \
     @"$BUILD/main-sources.txt"
 if [ $? -ne 0 ]; then
@@ -114,7 +129,7 @@ echo "JGit utilise : $(basename "$JGIT_JAR")"
 # Les repertoires temporaires des tests sont forces dans `build/tmp` :
 # le test « blob de plus de 64 Mo » ecrit ~130 Mo, et /tmp est un tmpfs
 # de 256 Mo souvent plein dans ce conteneur.
-"$JAVA" -Djava.io.tmpdir="$BUILD/tmp" -jar "$JUNIT_JAR" \
+"$JAVA" -Djava.io.tmpdir="$BUILD/tmp" -Dpickaxe.src.dir="$ROOT/src/main/java" -jar "$JUNIT_JAR" \
     --class-path "$CP:$BUILD/classes:$BUILD/test-classes" \
     --scan-class-path "$BUILD/test-classes" \
     --details=tree \
