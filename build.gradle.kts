@@ -14,7 +14,7 @@
 //     — the jar of the "Settings Sync" plugin, NOT the platform classpath
 //     (`bootClassPathJarNames` = 263 entries, none of them "settingsSync");
 //   * the IDE's own Git plugin (`Git4Idea`) references no `org/eclipse/jgit`
-//     class at all (it has been rewritten in Rust).
+//     class at all.
 //
 // A third-party plugin therefore does not see JGit, unless it declares a
 // dependency on "com.intellij.settingsSync" — i.e. it would make a plugin the

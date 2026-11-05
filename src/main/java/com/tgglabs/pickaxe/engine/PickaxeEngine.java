@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.regex.Pattern;
 
 /**
@@ -31,11 +32,11 @@ import java.util.regex.Pattern;
  * ajoutent / suppriment une chaine ({@code git log -S}) ou dont le diff
  * matche une expression ({@code git log -G}).
  *
- * <p><b>Regle de qualite n°1 : zero faux positif.</b> Une chaine reecrite a
- * l'identique ne doit PAS remonter. C'est la raison du mode STRING : on
- * compare le NOMBRE d'occurrences avant / apres, et non la presence de la
- * chaine dans le diff. Un renommage de fichier sans changement de contenu ne
- * remonte pas non plus (le contenu est identique des deux cotes).</p>
+ * <p><b>Regle de qualite n°1 : une ligne reecrite a l'identique ne doit pas
+ * remonter.</b> C'est la raison du mode STRING : on compare le NOMBRE
+ * d'occurrences avant / apres, et non la presence de la chaine dans le diff.
+ * Un renommage de fichier sans changement de contenu ne remonte pas non
+ * plus (le contenu est identique des deux cotes).</p>
  *
  * <p>Le moteur ne depend QUE de JGit : il est donc testable sans IDE, et
  * reutilisable par n'importe quel code de la plateforme.</p>
@@ -53,11 +54,30 @@ public final class PickaxeEngine {
 
     private final Repository repository;
 
+    /**
+     * Test d'annulation : {@code true} = la recherche doit s'interrompre.
+     *
+     * <p>Le moteur ne depend QUE de JGit : il ne connait pas l'IDE. L'IDE
+     * lui fournit donc ce test (par exemple {@code indicator::isCanceled}) et
+     * le moteur l'appelle a chaque commit et a chaque entree de la boucle de
+     * diff. Par defaut, la recherche n'est jamais annulee : les tests
+     * existants n'ont rien a changer.</p>
+     */
+    private final BooleanSupplier cancelled;
+
     public PickaxeEngine(Repository repository) {
+        this(repository, () -> false);
+    }
+
+    /**
+     * @param cancelled test d'annulation ; {@code null} = jamais annule
+     */
+    public PickaxeEngine(Repository repository, BooleanSupplier cancelled) {
         if (repository == null) {
             throw new IllegalArgumentException("repository must not be null");
         }
         this.repository = repository;
+        this.cancelled = cancelled == null ? () -> false : cancelled;
     }
 
     public Repository getRepository() {
@@ -102,8 +122,18 @@ public final class PickaxeEngine {
                 if (hits.size() >= query.getMaxResults()) {
                     break;
                 }
+                // Annulation : on verifie AVANT chaque commit, pour que le
+                // parcours d'un gros historique s'arrete aussitot.
+                if (cancelled.getAsBoolean()) {
+                    break;
+                }
                 List<String> matchedPaths = matchingPaths(commit, walk, formatter, query,
                         needleBytes, pathPattern, regex);
+                if (cancelled.getAsBoolean()) {
+                    // Annulation au milieu du commit courant : le resultat
+                    // partiel est abandonne plutot que remonte incomplet.
+                    break;
+                }
                 if (!matchedPaths.isEmpty()) {
                     hits.add(new PickaxeHit(
                             commit.getName(),
@@ -164,6 +194,13 @@ public final class PickaxeEngine {
                                         Pattern regex) throws IOException {
         final List<String> matched = new ArrayList<>();
 
+        // Commit de fusion : `git log -S/-G` n'affiche aucun diff pour une
+        // fusion par defaut (sans -m). Comparer au premier parent ferait
+        // remonter une seconde fois chaque changement de la branche fusionnee.
+        if (commit.getParentCount() > 1) {
+            return matched;
+        }
+
         RevTree commitTree = walk.parseTree(commit.getTree().getId());
         RevTree parentTree = null;
         if (commit.getParentCount() > 0) {
@@ -177,16 +214,23 @@ public final class PickaxeEngine {
         // en CanonicalTreeParser (l'iterateur d'arbre du diff). Pour le commit
         // initial, le parseur "ancien" n'est pas initialise : il est vide,
         // comme l'arbre vide de git.
-        ObjectReader reader = repository.newObjectReader();
-        CanonicalTreeParser oldTreeParser = new CanonicalTreeParser();
-        CanonicalTreeParser newTreeParser = new CanonicalTreeParser();
-        newTreeParser.reset(reader, commitTree.getId());
-        if (parentTree != null) {
-            oldTreeParser.reset(reader, parentTree.getId());
+        List<DiffEntry> entries;
+        try (ObjectReader reader = repository.newObjectReader()) {
+            CanonicalTreeParser oldTreeParser = new CanonicalTreeParser();
+            CanonicalTreeParser newTreeParser = new CanonicalTreeParser();
+            newTreeParser.reset(reader, commitTree.getId());
+            if (parentTree != null) {
+                oldTreeParser.reset(reader, parentTree.getId());
+            }
+            entries = formatter.scan(oldTreeParser, newTreeParser);
         }
-        List<DiffEntry> entries = formatter.scan(oldTreeParser, newTreeParser);
 
         for (DiffEntry entry : entries) {
+            // Annulation : on verifie a chaque entree de la boucle de diff,
+            // car c'est elle qui lit les blobs (la partie la plus lente).
+            if (cancelled.getAsBoolean()) {
+                break;
+            }
             String path = entry.getChangeType() == DiffEntry.ChangeType.DELETE
                     ? entry.getOldPath()
                     : entry.getNewPath();

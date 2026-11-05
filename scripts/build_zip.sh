@@ -56,9 +56,13 @@ if [ -f "$IDE/build.txt" ]; then echo "build  : $(tr '\n' ' ' < "$IDE/build.txt"
 echo "version: $VERSION"
 
 # ------------------------------------------- classpath de la PLATEFORME ------
-# Tous les jars de lib/ + plugins/ du IDE : c'est le classpath reel.
+# ATTENTION (revue du jury, 05/11) : le classpath de compilation ne doit
+# contenir QUE lib/*.jar du IDE + les deux jars embarques (JGit, JavaEWAH).
+# Les plugins/*/lib/*.jar du IDE ne sont PAS dans le classpath runtime d'un
+# plugin tiers : y mettre une classe d'un plugin tiers ferait compiler le
+# code, puis planter a l'execution (NoClassDefFoundError).
 PLAT=""
-for j in "$IDE"/lib/*.jar "$IDE"/plugins/*/lib/*.jar; do
+for j in "$IDE"/lib/*.jar; do
     [ -f "$j" ] && PLAT="$PLAT:$j"
 done
 PLAT="${PLAT#:}"
@@ -95,11 +99,21 @@ for candidate in "$IDE/jbr/bin/jar" "$(dirname "$JAVAC")/jar" \
 done
 if [ -z "$JAR_TOOL" ]; then echo "ERREUR : outil 'jar' introuvable" >&2; exit 1; fi
 echo "jar tool : $JAR_TOOL"
+# Horodatage FIXE dans le jar (option --date du JDK 17+) : deux constructions
+# du meme code donnent le meme jar, donc le meme ZIP. C'est ce que fait la
+# recette Gradle officielle (isPreserveFileTimestamps = false).
+JAR_DATE_OPT=""
+if "$JAR_TOOL" --help 2>&1 | grep -q -- '--date'; then
+    JAR_DATE_OPT="--date 1980-02-01T00:00:00Z"
+    echo "jar : horodatage fixe (--date 1980-02-01T00:00:00Z)"
+else
+    echo "jar : ATTENTION, option --date absente -> le jar ne sera pas reproductible"
+fi
 PLUGIN_JAR="$BUILD/$NAME-$VERSION.jar"
 rm -f "$PLUGIN_JAR"
-( cd "$BUILD/classes" && "$JAR_TOOL" --create --file "$PLUGIN_JAR" . ) \
+( cd "$BUILD/classes" && "$JAR_TOOL" --create $JAR_DATE_OPT --file "$PLUGIN_JAR" . ) \
     || { echo "ECHEC : creation du jar" >&2; exit 1; }
-"$JAR_TOOL" --update --file "$PLUGIN_JAR" -C "$ROOT/src/main/resources" META-INF/plugin.xml \
+"$JAR_TOOL" --update $JAR_DATE_OPT --file "$PLUGIN_JAR" -C "$ROOT/src/main/resources" META-INF/plugin.xml \
     || { echo "ECHEC : ajout du plugin.xml dans le jar" >&2; exit 1; }
 echo "jar du plugin : $PLUGIN_JAR ($(stat -c%s "$PLUGIN_JAR") octets)"
 echo "--- contenu du jar ---"
@@ -114,9 +128,15 @@ mkdir -p "$STAGE/$NAME/lib"
 cp "$PLUGIN_JAR" "$STAGE/$NAME/lib/"
 cp "$JGIT" "$STAGE/$NAME/lib/"
 cp "$EWAH" "$STAGE/$NAME/lib/"
+# Horodatage FIXE de tous les fichiers de l'archive (le plus ancien horodatage
+# DOS representable) : le ZIP ne depend plus de l'heure de la construction.
+find "$STAGE" -exec touch -t 198002010000 {} +
 ZIP="$OUT/$NAME-$VERSION.zip"
 rm -f "$ZIP"
-( cd "$STAGE" && zip -q -r -X "$ZIP" "$NAME" ) \
+# Liste TRIEE des entrees (repertoires + fichiers) : l'ordre de `zip -r`
+# depend du ordre de lecture du systeme de fichiers, donc il n'est pas
+# reproductible. Ici, l'ordre est impose.
+( cd "$STAGE" && { find "$NAME" -type d; find "$NAME" -type f; } | LC_ALL=C sort | zip -q -X "$ZIP" -@ ) \
     || { echo "ECHEC : creation du ZIP" >&2; exit 1; }
 echo "ZIP : $ZIP"
 echo "taille : $(stat -c%s "$ZIP") octets ($(du -h "$ZIP" | cut -f1))"

@@ -36,6 +36,7 @@ import java.awt.Insets;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 /**
  * Dialogue « saisir une chaine → lister les commits ».
@@ -183,7 +184,12 @@ public class PickaxeDialog extends DialogWrapper {
                 indicator.setIndeterminate(true);
                 final List<PickaxeHit> hits;
                 try {
-                    hits = search(needle, mode, pathFilter);
+                    // L'indicateur de la tache de fond est le signal
+                    // d'annulation : le moteur le teste a chaque commit et a
+                    // chaque entree de la boucle de diff. « Cancel » arrete
+                    // donc vraiment le parcours, au lieu de n'etre qu'un
+                    // decoratif.
+                    hits = search(needle, mode, pathFilter, indicator::isCanceled);
                 } catch (PickaxeException ex) {
                     final String message = ex.getMessage() == null ? "Search failed." : ex.getMessage();
                     ApplicationManager.getApplication().invokeLater(() -> setStatus(message, true), modality);
@@ -231,10 +237,10 @@ public class PickaxeDialog extends DialogWrapper {
      * {@code .git} d'un worktree), et c'est aussi le chemin couvert par le
      * test de regression.</p>
      */
-    private List<PickaxeHit> search(String needle, PickaxeMode mode, String pathFilter)
-            throws PickaxeException {
+    private List<PickaxeHit> search(String needle, PickaxeMode mode, String pathFilter,
+                                    BooleanSupplier cancelled) throws PickaxeException {
         try (Repository repository = PickaxeRepository.open(repositoryRoot)) {
-            PickaxeEngine engine = new PickaxeEngine(repository);
+            PickaxeEngine engine = new PickaxeEngine(repository, cancelled);
             PickaxeQuery query = PickaxeQuery.builder(mode, needle)
                     .pathFilter(pathFilter)
                     .build();

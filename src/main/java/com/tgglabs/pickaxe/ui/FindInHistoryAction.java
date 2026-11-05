@@ -1,5 +1,6 @@
 package com.tgglabs.pickaxe.ui;
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
@@ -35,6 +36,11 @@ public class FindInHistoryAction extends AnAction {
         }
         PickaxeDialog dialog = new PickaxeDialog(project, repositoryRoot);
         dialog.show();
+    }
+
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.BGT;
     }
 
     @Override

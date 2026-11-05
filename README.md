@@ -16,10 +16,13 @@ holds the source, the tests and the build recipe.
 * **Find where a string came from** — type a string, get the list of commits that
   added or removed it, most recent first, even if the string no longer exists in
   your working tree.
-* **No false positives** — a line rewritten identically is *not* reported: only a
-  real change in the number of occurrences counts (this is the difference between
-  a correct `-S` search and the naive "is the string there?" implementation).
+* **A line rewritten identically is not reported** — only a real change in the
+  number of occurrences counts (this is the difference between a correct `-S`
+  search and the naive "is the string there?" implementation).
 * **Regular expressions** — match the diff itself, with `git log -G` semantics.
+* **Merge commits are not diffed** — like `git log -S` without `-m`, a change
+  brought in by a merge is reported **once**, by the commit that made it, not
+  twice (once by the branch commit, once by the merge).
 * **Filter by path** — restrict the search to the files you care about. Binary
   files are ignored.
 * **Works in a linked worktree** — in a worktree created by `git worktree add`,
@@ -67,8 +70,8 @@ The hashes of the released ZIP are recorded in [`SHA256.txt`](SHA256.txt).
 
 The test suite is a set of **pure engine tests** (no IDE needed): they build a
 small Git repository with JGit and check the results of the `-S` / `-G` searches,
-including the no-false-positive case, unicode, binary files, path filters, empty
-and null queries.
+including the identical-rewrite case, merge commits, cancellation, unicode,
+binary files, path filters, empty and null queries.
 
 An IDE-free runner is also provided, for a machine without Gradle:
 
@@ -128,7 +131,7 @@ Measured on the jars of PyCharm 2026.2.4 (build 262.11879.98):
 * `org.eclipse.jgit`: present, but **only** inside `lib/intellij.settingsSync.core.jar`
   — the jar of the *Settings Sync* plugin, **not** of the platform;
 * the IDE's own Git plugin (`Git4Idea`) does not reference a single
-  `org/eclipse/jgit` class (it has been rewritten in Rust).
+  `org/eclipse/jgit` class.
 
 A third-party plugin therefore does not see JGit, unless it declares a dependency
 on `com.intellij.settingsSync` — i.e. it would make a disableable plugin mandatory,
@@ -139,8 +142,10 @@ which has nothing to do with version control. JGit is therefore bundled, in the
 
 * The UI is a **modal dialog**: there is no clickable results panel and no
   integrated diff yet.
-* The search runs on a background thread (the IDE never freezes), but the
-  progress of a very large repository is not detailed.
+* The search runs on a background thread (the IDE never freezes) and the
+  **Cancel** button really stops it — the engine checks the cancellation at
+  every commit and at every diff entry — but the progress of a very large
+  repository is not detailed.
 * The plugin has been verified on **PyCharm 2026.2.4**; it has not been tested on
   IntelliJ IDEA (it only uses `com.intellij.modules.platform`, so nothing in the
   code is PyCharm-specific).

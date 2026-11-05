@@ -146,6 +146,12 @@ def main() -> int:
     test_classes.mkdir(parents=True, exist_ok=True)
 
     main_sources = sorted((WORK / "src" / "main" / "java" / "com" / "tgglabs" / "pickaxe" / "engine").glob("*.java"))
+    # GitRepositoryLocator est HORS du paquet 'engine' mais PickaxeRepository
+    # l'utilise (correction worktree du 05/11) : sans ce fichier, la copie
+    # ne compile pas. Le script etait donc casse depuis cette correction.
+    locator = WORK / "src" / "main" / "java" / "com" / "tgglabs" / "pickaxe" / "GitRepositoryLocator.java"
+    if locator.exists():
+        main_sources.append(locator)
     test_sources = sorted((WORK / "src" / "test" / "java").rglob("*.java"))
 
     def compile_many(sources, out, extra_cp):

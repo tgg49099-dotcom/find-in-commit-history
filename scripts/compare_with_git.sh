@@ -43,6 +43,9 @@ done
 BUILD="$ROOT/build/git-compare/classes"
 mkdir -p "$BUILD"
 find "$ROOT/src/main/java/com/tgglabs/pickaxe/engine" -name '*.java' > "$BUILD/sources.txt"
+# GitRepositoryLocator est hors du paquet 'engine' mais PickaxeRepository
+# l'utilise (correction worktree du 05/11) : sans lui, la compilation echoue.
+echo "$ROOT/src/main/java/com/tgglabs/pickaxe/GitRepositoryLocator.java" >> "$BUILD/sources.txt"
 "$JAVAC" -encoding UTF-8 --release 17 -nowarn -cp "$CP" -d "$BUILD" @"$BUILD/sources.txt" || exit 1
 find "$ROOT/src/test/java" -name '*.java' > "$BUILD/test-sources.txt"
 "$JAVAC" -encoding UTF-8 --release 17 -nowarn -cp "$CP:$BUILD" -d "$BUILD" @"$BUILD/test-sources.txt" || exit 1

@@ -11,8 +11,8 @@
     <ul>
       <li><b>Find where a string came from</b> — type a string, get the list of
       commits that added or removed it, most recent first.</li>
-      <li><b>No false positives</b> — a line rewritten identically is not
-      reported: only a real change in the number of occurrences is.</li>
+      <li>A line rewritten identically is not reported: only a real change in
+      the number of occurrences is.</li>
       <li><b>Regular expressions</b> — match the diff itself with
       <code>git log -G</code> semantics.</li>
       <li><b>Filter by path</b> — restrict the search to the files you care
@@ -37,7 +37,8 @@
       500 matching commits.</li>
       <li>Match the diff itself with a regular expression: added <em>and</em>
       removed lines are tested, like <code>git log -G</code> (Java regular
-      expressions; merge commits are diffed against their first parent).</li>
+      expressions; a merge commit is not diffed, so a change brought in by a
+      merge is reported once, by the commit that made it).</li>
       <li>Restrict the search to the files you care about: the path filter is
       a regular expression matched anywhere in the path. Binary files are
       ignored.</li>
@@ -57,10 +58,6 @@
   <idea-version since-build="262"/>
 
   <depends>com.intellij.modules.platform</depends>
-
-  <extensions defaultExtensionNs="com.intellij">
-    <postStartupActivity implementation="com.tgglabs.pickaxe.PickaxeStartupActivity"/>
-  </extensions>
 
   <!-- Les actions se declarent dans un bloc <actions> de premier niveau, et
        NON dans <extensions> : placees dans <extensions>, elles sont
