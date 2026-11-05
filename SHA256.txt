@@ -40,5 +40,5 @@
 
 ee90b66884fa16078495de6768c93bb1164840165bacb78d11558b370fdce980  build/distributions/FindinCommitHistory-0.0.1.zip
 
-# md5 (32 hex) :
-bb18e3f8281476b707a2a595b3c66a2e
+# md5 (32 hex) — commenter pour que « sha256sum -c SHA256.txt » n'affiche aucun avertissement :
+# bb18e3f8281476b707a2a595b3c66a2e
