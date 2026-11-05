@@ -16,7 +16,7 @@ aucun jeton, ne coûte rien.
 src/main/java/com/tgglabs/pickaxe/engine/   moteur pur (JGit seul, aucun IDE)
 src/main/java/com/tgglabs/pickaxe/ui/       dialogue + action de menu
 src/main/resources/META-INF/plugin.xml      descripteur de plugin
-src/test/java/…                            19 tests du moteur
+src/test/java/…                            22 tests du moteur
 scripts/run_tests.sh                       compile + lance les tests (hors IDE)
 scripts/contre_epreuve_rouge.sh             preuve ROUGE (mutation du moteur)
 scripts/build_zip.sh                       construit le ZIP (hors reseau)
