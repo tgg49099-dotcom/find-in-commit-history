@@ -50,7 +50,7 @@ PROJ="${PROJ:-/work/projets/demo-entree-5k}"
 # ont ete prises). On n'en copie que la partie « config » (13 Mo) : les
 # index (« system », 382 Mo) sont reconstruits.
 CFG_BASE="${CFG_BASE:-/work/preuves/cycle119/preuves5k/idecfg}"
-MD5_ATTENDU="${MD5_ATTENDU:-bb18e3f8281476b707a2a595b3c66a2e}"
+MD5_ATTENDU="${MD5_ATTENDU:-00f2bc2495fcd34b7a46cc9da5e8a8d4}"
 CHAINE="${CHAINE:-pi3rre-magique-7749}"
 
 export PATH="/work/tools/x11/extracted/usr/bin:$PATH"

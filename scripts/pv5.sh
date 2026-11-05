@@ -35,7 +35,7 @@ PROV="${PROV:-/work/preuves/cycle122/preuves-v5}"
 SRC_CFG="${SRC_CFG:-/work/preuves/cycle122/preuves-v4/idecfg}"
 PROJ="${PROJ:-/work/projets/demo-entree-5k}"
 ZIP="${ZIP:-$ROOT/build/distributions/FindinCommitHistory-0.0.1.zip}"
-MD5_ATTENDU="${MD5_ATTENDU:-5d833ac0fd2c2309ec2e182a42d71d42}"
+MD5_ATTENDU="${MD5_ATTENDU:-00f2bc2495fcd34b7a46cc9da5e8a8d4}"
 
 export PATH="/work/tools/x11/extracted/usr/bin:$PATH"
 export LD_LIBRARY_PATH="/work/tools/x11/extracted/usr/bin:/work/tools/x11/extracted/usr/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH:-}"
