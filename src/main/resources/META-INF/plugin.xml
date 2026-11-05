@@ -1,0 +1,39 @@
+<idea-plugin>
+  <id>com.tgglabs.pickaxe</id>
+  <name>Find in Commit History</name>
+  <version>0.0.1</version>
+  <vendor email="tgg.apps.support@gmail.com" url="https://plugins.jetbrains.com/vendor/tgg-labs">Tgg Labs</vendor>
+
+  <description><![CDATA[
+    <p>Search your <b>Git history</b> for the commits that add or remove a
+    string — the <code>git log -S</code> and <code>git log -G</code> ("pickaxe")
+    search, inside your IDE.</p>
+    <ul>
+      <li><b>Find where a string came from</b> — type a string, get the list of
+      commits that added or removed it, most recent first.</li>
+      <li><b>No false positives</b> — a line rewritten identically is not
+      reported: only a real change in the number of occurrences is.</li>
+      <li><b>Regular expressions</b> — match the diff itself with
+      <code>git log -G</code> semantics.</li>
+      <li><b>Filter by path</b> — restrict the search to the files you care
+      about. Binary files are ignored.</li>
+      <li><b>Works with your own repository</b> — the history is read locally,
+      nothing is sent anywhere.</li>
+    </ul>
+  ]]></description>
+
+  <idea-version since-build="243" until-build="262.*"/>
+
+  <depends>com.intellij.modules.platform</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <postStartupActivity implementation="com.tgglabs.pickaxe.PickaxeStartupActivity"/>
+
+    <action id="com.tgglabs.pickaxe.FindInHistoryAction"
+            class="com.tgglabs.pickaxe.ui.FindInHistoryAction"
+            text="Find in Commit History…"
+            description="Search the Git history for commits that add or remove a string (git log -S / -G)">
+      <add-to-group group-id="ToolsMenu" anchor="last"/>
+    </action>
+  </extensions>
+</idea-plugin>
