@@ -2,8 +2,8 @@
 #
 # Plugin      : Find in Commit History (id com.tgglabs.pickaxe), version 0.0.1
 # Fichier     : build/distributions/FindinCommitHistory-0.0.1.zip
-# Taille      : 3 129 874 octets
-# Construit le: 2026-11-05 20:08:39 (CET), scripts/build_zip.sh (0 téléchargement,
+# Taille      : 3 130 623 octets
+# Construit le: 2026-11-05 21:04:19 (CET), scripts/build_zip.sh (0 téléchargement,
 #               0 $), compilé contre l'IDE local PyCharm 2026.2.4 (build 262.11879.98)
 #
 # ZIP REFAIT le 05/11/2026 à 20:08 après la REVUE DU JURY (demande `aba5`,
@@ -32,7 +32,22 @@
 #      entrées trié. Mesure : 2 reconstructions à 2 secondes d'intervalle ont
 #      donné le MÊME md5 et le MÊME sha256 (voir /work/preuves/cycle122/).
 #
-# Suite de tests au moment de ce build : **41 tests, 41 verts**.
+# ZIP REFAIT le 05/11/2026 à 21:04 (consigne du 05/11 21:15 : deux défauts du
+# moteur). Il contient, en plus de ce qui précède :
+#   9. plus de FAUX POSITIF sur les blobs de plus de 64 Mo : un blob qui n'a
+#      pas pu être lu est maintenant distingué d'un blob ABSENT ; l'entrée du
+#      diff est IGNORÉE au lieu d'être comptée « zéro occurrence » (avant : une
+#      chaîne toujours présente était signalée comme supprimée) ;
+#  10. plus d'INTERRUPTION de la recherche sur un gros fichier : JGit refuse
+#      de charger en mémoire un blob de 50 Mo ou plus (LargeObjectException,
+#      « … exceeds size limit ») ; ce blob est désormais traité comme « trop
+#      gros » (entrée ignorée) au lieu de faire échouer toute la recherche.
+#      Mesures : /work/preuves/cycle123/blob-size-probe.log.
+#  11. le mode -G n'est PAS modifié : l'expérience montre que les numéros de
+#      ligne d'un Edit de JGit sont 0-based (le moteur testait donc bien la
+#      ligne réellement modifiée) ; test de non-régression ajouté.
+#
+# Suite de tests au moment de ce build : **47 tests, 47 verts**.
 #
 # NE PAS RECONSTRUIRE. Le md5 d'un ZIP JetBrains n'est PAS un critère de
 # reproductibilité garanti (mesuré le 04/11 par la mère : deux ZIP de même
@@ -55,7 +70,7 @@
 # ATTENTION : une empreinte qui ne correspond pas à cette valeur = le fichier
 # reçu n'est pas celui qui a été annoncé. Ne pas téléverser.
 
-2b407b61ed1d653186a325c5247773cdcba05d9dc0141607baddd05dd04b6f6f  build/distributions/FindinCommitHistory-0.0.1.zip
+95e5a91e705191f0a14e89eb6dd394add72ed576a1f7dac2242692fc6729e01f  build/distributions/FindinCommitHistory-0.0.1.zip
 
 # md5 (32 hex) — commenter pour que « sha256sum -c SHA256.txt » n'affiche aucun avertissement :
-# 5d833ac0fd2c2309ec2e182a42d71d42
+# ca8a353c8521c1e28d91303dd9573fd4

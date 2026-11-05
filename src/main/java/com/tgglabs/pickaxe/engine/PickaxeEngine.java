@@ -5,6 +5,7 @@ import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.Edit;
 import org.eclipse.jgit.diff.EditList;
 import org.eclipse.jgit.diff.RawTextComparator;
+import org.eclipse.jgit.errors.LargeObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
@@ -238,9 +239,21 @@ public final class PickaxeEngine {
                 continue;
             }
 
-            byte[] oldBytes = loadBlob(entry.getOldId().toObjectId());
-            byte[] newBytes = loadBlob(entry.getNewId().toObjectId());
+            BlobContent oldBlob = loadBlob(entry.getOldId().toObjectId());
+            BlobContent newBlob = loadBlob(entry.getNewId().toObjectId());
 
+            if (oldBlob.isTooLarge() || newBlob.isTooLarge()) {
+                // Un des deux blobs n'a pas pu etre lu (trop gros pour la
+                // memoire, ou refuse par JGit). On ne peut donc PAS comparer
+                // les deux cotes : on IGNORE l'entree. Sans cela, un blob non
+                // lu serait compte « zero occurrence » et une chaine
+                // toujours presente serait signalee comme supprimee
+                // (faux positif).
+                continue;
+            }
+
+            byte[] oldBytes = oldBlob.getBytes();
+            byte[] newBytes = newBlob.getBytes();
             if (!query.isIncludeBinary() && (isBinary(oldBytes) || isBinary(newBytes))) {
                 // Fichier binaire : on l'ignore (contrainte de la consigne :
                 // un binaire n'est pas du texte, compter des occurrences
@@ -300,16 +313,74 @@ public final class PickaxeEngine {
         return false;
     }
 
-    /** Contenu d'un blob ; {@code null} si l'objet n'existe pas. */
-    private byte[] loadBlob(ObjectId id) throws IOException {
+    /**
+     * Contenu d'un blob, avec le statut de son chargement.
+     *
+     * <p>Trois cas doivent rester distincts :</p>
+     * <ul>
+     *   <li><b>absent</b> : l'objet n'existe pas (fichier ajoute ou
+     *       supprime) — son contenu vaut zero occurrence ;</li>
+     *   <li><b>trop gros</b> : le blob n'a pas pu etre lu en memoire — on ne
+     *       peut pas le comparer, l'entree du diff est donc ignoree ;</li>
+     *   <li><b>lu</b> : le contenu est disponible.</li>
+     * </ul>
+     *
+     * <p>Confondre « absent » et « trop gros » produit un faux positif :
+     * une chaine presente dans l'ancien blob et invisible dans le nouveau
+     * (trop gros) serait signalee comme supprimee alors qu'elle est peut-etre
+     * toujours la.</p>
+     */
+    private static final class BlobContent {
+
+        /** Le blob n'existe pas : aucun octet a comparer. */
+        static final BlobContent ABSENT = new BlobContent(null, false);
+
+        /** Le blob n'a pas pu etre lu : l'entree doit etre ignoree. */
+        static final BlobContent TOO_LARGE = new BlobContent(null, true);
+
+        private final byte[] bytes;
+        private final boolean tooLarge;
+
+        private BlobContent(byte[] bytes, boolean tooLarge) {
+            this.bytes = bytes;
+            this.tooLarge = tooLarge;
+        }
+
+        /** Le contenu lu ; {@code null} si le blob est absent. */
+        byte[] getBytes() {
+            return bytes;
+        }
+
+        /** {@code true} si le blob n'a pas pu etre lu. */
+        boolean isTooLarge() {
+            return tooLarge;
+        }
+    }
+
+    /**
+     * Contenu d'un blob.
+     *
+     * @return {@link BlobContent#ABSENT} si l'objet n'existe pas,
+     *         {@link BlobContent#TOO_LARGE} s'il n'a pas pu etre lu,
+     *         sinon le contenu lui-meme
+     */
+    private BlobContent loadBlob(ObjectId id) throws IOException {
         if (id == null || ObjectId.zeroId().equals(id)) {
-            return null;
+            return BlobContent.ABSENT;
         }
         ObjectLoader loader = repository.open(id);
         if (loader.getSize() > MAX_BLOB_BYTES) {
-            return null;
+            return BlobContent.TOO_LARGE;
         }
-        return loader.getBytes();
+        try {
+            return new BlobContent(loader.getBytes(), false);
+        } catch (LargeObjectException e) {
+            // JGit refuse de charger en memoire un blob au-dela de son propre
+            // seuil (core.bigFileThreshold, 50 Mo par defaut — mesure du
+            // 05/11/2026) : ce blob est donc « trop gros » pour nous aussi.
+            // On l'ignore au lieu de faire echouer toute la recherche.
+            return BlobContent.TOO_LARGE;
+        }
     }
 
     /**

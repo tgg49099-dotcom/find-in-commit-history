@@ -119,12 +119,12 @@ réel pour la description, 963 pour les change-notes. Ne pas les réécrire.)*
 | | |
 |---|---|
 | Chemin | `build/distributions/FindinCommitHistory-0.0.1.zip` |
-| Taille | **3 129 874 octets** |
-| Construit le | **2026-11-05 20:08:39 CET** (`scripts/build_zip.sh`, 0 téléchargement, 0 $) |
-| sha256 | `2b407b61ed1d653186a325c5247773cdcba05d9dc0141607baddd05dd04b6f6f` |
-| md5 | `5d833ac0fd2c2309ec2e182a42d71d42` |
+| Taille | **3 130 623 octets** |
+| Construit le | **2026-11-05 21:04:19 CET** (`scripts/build_zip.sh`, 0 téléchargement, 0 $) |
+| sha256 | `95e5a91e705191f0a14e89eb6dd394add72ed576a1f7dac2242692fc6729e01f` |
+| md5 | `ca8a353c8521c1e28d91303dd9573fd4` |
 | Empreintes complètes | `SHA256.txt` (source de vérité unique) |
-| Contenu de `lib/` | `FindinCommitHistory-0.0.1.jar` (23 829 o) · `org.eclipse.jgit-6.10.1.202505221210-r.jar` (3 209 491 o) · `JavaEWAH-1.1.12.jar` (166 891 o) |
+| Contenu de `lib/` | `FindinCommitHistory-0.0.1.jar` (24 729 o) · `org.eclipse.jgit-6.10.1.202505221210-r.jar` (3 209 491 o) · `JavaEWAH-1.1.12.jar` (166 891 o) |
 | Ni `slf4j-api` ni `commons-codec` | la plateforme les fournit (`lib/util-8.jar` contient 58 classes `org/slf4j/…`) |
 
 Vérification par le destinataire :
@@ -132,13 +132,13 @@ Vérification par le destinataire :
 ```
 sha256sum -c SHA256.txt          # doit afficher : OK
 md5sum    build/distributions/FindinCommitHistory-0.0.1.zip
-# attendu : 5d833ac0fd2c2309ec2e182a42d71d42
+# attendu : ca8a353c8521c1e28d91303dd9573fd4
 ```
 
 ## 9. État de la soumission
 
 - **ZIP** : construit par la recette Gradle officielle, **hors ligne** (0 téléchargement).
-  Le ZIP livré est celui du **05/11/2026 20:08:39**, reconstruit après la **revue du jury
+  Le ZIP livré est celui du **05/11/2026 21:04:19**, reconstruit après la **revue du jury
   `aba5`** (verdict A_CORRIGER) : fusions non diffées (un seul résultat), annulation
   effective, `ObjectReader` fermé, `getActionUpdateThread()`, `PickaxeStartupActivity`
   supprimé, classpath de compilation restreint — avec les correctifs D1, D2, D3 et le

@@ -16,10 +16,10 @@
 | | |
 |---|---|
 | **Chemin** | `/work/pickaxe/build/distributions/FindinCommitHistory-0.0.1.zip` |
-| Taille | **3 129 874 octets** (400 Mo max selon la doc officielle — large marge) |
-| Construit le | 2026-11-05 **20:08:39** CET (`scripts/build_zip.sh`, 0 téléchargement, 0 $), **après la revue du jury `aba5`** |
-| **md5** | `5d833ac0fd2c2309ec2e182a42d71d42` |
-| **sha256** | `2b407b61ed1d653186a325c5247773cdcba05d9dc0141607baddd05dd04b6f6f` |
+| Taille | **3 130 623 octets** (400 Mo max selon la doc officielle — large marge) |
+| Construit le | 2026-11-05 **21:04:19** CET (`scripts/build_zip.sh`, 0 téléchargement, 0 $), **après la revue du jury `aba5`** |
+| **md5** | `ca8a353c8521c1e28d91303dd9573fd4` |
+| **sha256** | `95e5a91e705191f0a14e89eb6dd394add72ed576a1f7dac2242692fc6729e01f` |
 | Source | `/work/pickaxe/SHA256.txt` (source de vérité unique), § 8 de `FICHE-MARKETPLACE.md` |
 
 **Contrôle avant de cliquer « Submit »** (à faire sur la machine qui détient le fichier) :
@@ -28,7 +28,7 @@
 cd /work/pickaxe
 sha256sum -c SHA256.txt          # doit afficher : build/distributions/FindinCommitHistory-0.0.1.zip: OK
 md5sum    build/distributions/FindinCommitHistory-0.0.1.zip
-# attendu : 5d833ac0fd2c2309ec2e182a42d71d42
+# attendu : ca8a353c8521c1e28d91303dd9573fd4
 ```
 
 ⚠ Une empreinte différente ⇒ **le fichier reçu n'est pas celui annoncé** : ne pas téléverser.
@@ -140,7 +140,7 @@ Chaque ligne = **la valeur EXACTE à saisir** + **le fichier local d'où elle vi
 3. **Remplir le formulaire** — reprendre les 20 lignes du § 1, dans l'ordre des champs.
    Les blocs longs (5 et 6) se collent tels quels, **sans retouche**.
 4. **Déposer le ZIP** — joindre `/work/pickaxe/build/distributions/FindinCommitHistory-0.0.1.zip`
-   (3 129 874 o). **Ne pas zipper, renommer ni re-compresser** le fichier.
+   (3 130 623 o). **Ne pas zipper, renommer ni re-compresser** le fichier.
 5. **Options de distribution** — prix `Free`, canal par défaut, **pas** de canal custom,
    **hidden décoché**, **pas** d'ads, `since-build 262`, catégorie `VCS`,
    mots-clés `git pickaxe search history log`, puis joindre les **3 captures** du § 3.

@@ -88,7 +88,7 @@ echo "=== 1. compilation des sources du moteur ==="
 # java.nio (aucune dependance a la plateforme), et ses tests — le cas du
 # WORKTREE, ou .git est un fichier — doivent tourner dans cette suite.
 rm -rf "$BUILD/classes" "$BUILD/test-classes"
-mkdir -p "$BUILD/classes" "$BUILD/test-classes"
+mkdir -p "$BUILD/classes" "$BUILD/test-classes" "$BUILD/tmp"
 find "$ROOT/src/main/java/com/tgglabs/pickaxe/engine" -name "*.java" > "$BUILD/main-sources.txt"
 echo "$ROOT/src/main/java/com/tgglabs/pickaxe/GitRepositoryLocator.java" >> "$BUILD/main-sources.txt"
 "$JAVAC" -encoding UTF-8 --release 17 -nowarn -cp "$CP" -d "$BUILD/classes" \
@@ -111,7 +111,10 @@ echo "OK : $(wc -l < "$BUILD/test-sources.txt") fichiers de tests compiles"
 
 echo "=== 3. execution des tests ==="
 echo "JGit utilise : $(basename "$JGIT_JAR")"
-"$JAVA" -jar "$JUNIT_JAR" \
+# Les repertoires temporaires des tests sont forces dans `build/tmp` :
+# le test « blob de plus de 64 Mo » ecrit ~130 Mo, et /tmp est un tmpfs
+# de 256 Mo souvent plein dans ce conteneur.
+"$JAVA" -Djava.io.tmpdir="$BUILD/tmp" -jar "$JUNIT_JAR" \
     --class-path "$CP:$BUILD/classes:$BUILD/test-classes" \
     --scan-class-path "$BUILD/test-classes" \
     --details=tree \
