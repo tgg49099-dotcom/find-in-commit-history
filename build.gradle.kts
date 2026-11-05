@@ -69,10 +69,27 @@ dependencies {
     // 6.10.1.202505221210-r est EXACTEMENT la version presente dans
     // l'IDE 2026.2.4 (compare classe par classe : 1 594 classes communes
     // sur 1 597).
-    implementation("org.eclipse.jgit:org.eclipse.jgit:6.10.1.202505221210-r")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:6.10.1.202505221210-r") {
+        // MESURE du 05/11/2026 (build Gradle officiel, `unzip -l` du ZIP
+        // produit SANS ces exclusions) : le ZIP embarquait 5 jars, dont
+        //   - slf4j-api-1.7.36.jar  -> INTERDIT par JetBrains (la plateforme
+        //     fournit org.slf4j dans util-8.jar) ;
+        //   - commons-codec-1.17.0.jar -> fourni par la plateforme
+        //     (intellij.libraries.commons.codec.jar).
+        // Ces deux-la sont donc des dependances TRANSITIVES de JGit a
+        // exclure : c'est ce que fait le script hors reseau du cycle 115.
+        exclude(group = "org.slf4j", module = "slf4j-api")
+        exclude(group = "commons-codec", module = "commons-codec")
+    }
     implementation("com.googlecode.javaewah:JavaEWAH:1.1.12")
 
+    // slf4j-api n'est plus resolu par la dependance JGit (exclu ci-dessus) :
+    // il faut le remettre explicitement pour la CLASSE DE TEST, sinon JGit
+    // ne trouve pas org.slf4j.LoggerFactory au runtime des tests.
+    // `testImplementation` n'est JAMAIS embarque dans le ZIP.
+    testImplementation("org.slf4j:slf4j-api:2.0.13")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -83,7 +100,7 @@ intellijPlatform {
         version = project.version.toString()
         ideaVersion {
             sinceBuild = (project.findProperty("pluginSinceBuild") as String?) ?: "243"
-            untilBuild = (project.findProperty("pluginUntilBuild") as String?) ?: "262.*"
+            untilBuild = (project.findProperty("pluginUntilBuild") as String?) ?: "263.*"
         }
         vendor {
             name = (project.findProperty("pluginVendorName") as String?) ?: "Tgg Labs"
@@ -100,6 +117,13 @@ intellijPlatform {
 }
 
 // Bytecode Java 17 : format impose par la plateforme (build 243+).
+// MESURE du 05/11/2026 : le jar produit par le build Gradle officiel est en
+// « major version 61 » = Java 17, exactement comme le ZIP construit a la main
+// du cycle 115. Une proposition de Jules (tache 15597185981936027315) faisait
+// passer le bytecode en Java 21 : REFUSEE, parce qu'elle aurait rendu les deux
+// ZIP non identiques (class file 65 au lieu de 61) alors qu'aucune mesure ne
+// l'exige, et que 17 est le format demande par la plateforme pour un plugin
+// `since-build 243`.
 tasks.withType<JavaCompile>().configureEach {
     sourceCompatibility = "17"
     targetCompatibility = "17"

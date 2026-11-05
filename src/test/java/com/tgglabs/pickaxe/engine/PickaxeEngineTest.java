@@ -287,6 +287,47 @@ class PickaxeEngineTest {
         assertFalse(PickaxeEngine.isBinary(null));
     }
 
+    // =====================================================================
+    // Tests ajoutes par Jules (tache 15597185981936027315, 05/11/2026).
+    // Ils ne touchent que des fonctions de base du moteur : ils n'ont pas
+    // besoin du depot de test.
+    // =====================================================================
+
+    @Test
+    @DisplayName("detection binaire : frontiere exacte a 8000 octets")
+    void binarySniffingAt8000ByteBoundary() {
+        // Octet nul au 8000e octet (index 7999) -> binaire
+        byte[] at7999 = new byte[8000];
+        Arrays.fill(at7999, (byte) 'a');
+        at7999[7999] = 0;
+        assertTrue(PickaxeEngine.isBinary(at7999), "index 7999 doit etre detecte comme binaire");
+
+        // Octet nul a l'index 8000 (> BINARY_SNIFF_BYTES) -> non detecte comme binaire
+        byte[] at8000 = new byte[8050];
+        Arrays.fill(at8000, (byte) 'a');
+        at8000[8000] = 0;
+        assertFalse(PickaxeEngine.isBinary(at8000), "index 8000 est hors de portee du renifleur");
+    }
+
+    @Test
+    @DisplayName("recherche unicode multi-octets et emojis")
+    void unicodeMultiByteAndEmojiSearch() {
+        String text = "L'été arrive 🚀 en fête ! 🚀 日本語";
+        byte[] content = text.getBytes(StandardCharsets.UTF_8);
+
+        assertEquals(2, PickaxeEngine.countOccurrences(content, "🚀".getBytes(StandardCharsets.UTF_8)));
+        assertEquals(1, PickaxeEngine.countOccurrences(content, "été".getBytes(StandardCharsets.UTF_8)));
+        assertEquals(1, PickaxeEngine.countOccurrences(content, "日本語".getBytes(StandardCharsets.UTF_8)));
+        assertEquals(0, PickaxeEngine.countOccurrences(content, "🎉".getBytes(StandardCharsets.UTF_8)));
+    }
+
+    @Test
+    @DisplayName("validation d'une chaine vide ou nulle")
+    void emptyAndWhitespaceNeedleValidation() {
+        assertThrows(IllegalArgumentException.class, () -> PickaxeQuery.builder(PickaxeMode.STRING, null).build());
+        assertThrows(IllegalArgumentException.class, () -> PickaxeQuery.builder(PickaxeMode.STRING, "").build());
+    }
+
     @Test
     @DisplayName("decoupe en lignes : comme git, sans ligne vide finale")
     void lineSplitting() {

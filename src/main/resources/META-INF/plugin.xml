@@ -22,7 +22,7 @@
     </ul>
   ]]></description>
 
-  <idea-version since-build="243" until-build="262.*"/>
+  <idea-version since-build="243" until-build="263.*"/>
 
   <depends>com.intellij.modules.platform</depends>
 

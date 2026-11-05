@@ -1,3 +1,12 @@
-build/
-libs/*.jar
+# Artefacts de build et dependances embarquees : jamais dans le depot.
+# (Tache Jules 15597185981936027315 : `.gitignore` complet ; fusionne avec
+#  celui qui existait deja au cycle 115, qui ignorait deja build/ et libs/.)
 .gradle/
+.intellijPlatform/
+build/
+libs/
+.idea/
+*.iml
+
+# Journal du build Gradle officiel (cycle 116).
+build-officiel.log
