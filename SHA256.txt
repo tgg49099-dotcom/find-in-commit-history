@@ -2,8 +2,8 @@
 #
 # Plugin      : Find in Commit History (id com.tgglabs.pickaxe), version 0.0.1
 # Fichier     : build/distributions/FindinCommitHistory-0.0.1.zip
-# Taille      : 3 133 212 octets
-# Construit le: 2026-11-05 21:39:58 (CET), scripts/build_zip.sh (0 téléchargement,
+# Taille      : 3 133 459 octets
+# Construit le: 2026-11-06 02:52:16 (CET), scripts/build_zip.sh (0 téléchargement,
 #               0 $), compilé contre l'IDE local PyCharm 2026.2.4 (build 262.11879.98)
 #
 # ZIP REFAIT le 05/11/2026 à 20:08 après la REVUE DU JURY (demande `aba5`,
@@ -63,6 +63,20 @@
 #   /work/preuves/cycle124/tests-ROUGE-copyhash.log  (3 tests rouges)
 #   /work/preuves/cycle124/tests-VERT-copyhash.log   (55/55 verts)
 #
+# ZIP REFAIT le 06/11/2026 a 02:52 (consigne du 06/11 02:40 : l'ordre des resultats).
+# Il contient, en plus de ce qui precede :
+#  13. l'ORDRE DES RESULTATS est GARANTI du plus recent au plus ancien. Le parcours
+#      de JGit 6.10.1 est topologique (comme `git log`) : il rend un commit avant ses
+#      enfants, donc ce n'est PAS un ordre par date quand les dates de commit sont
+#      dans le desordre (decalage d'horloge, cherry-pick, rebase). Mesure : 40 depots
+#      aleatoires, 40 violations de l'ordre par date decroissante. Les resultats sont
+#      donc tries explicitement par date de commit decroissante, apres la limite
+#      `maxResults` (le tri est stable : la limite porte sur les memes commits).
+#      Test : `ChronologicalOrderTest` (2 tests), rouge avant le correctif, vert apres.
+#      Suite complete de ce build : **57 tests, 57 verts** (55 avant).
+#      Preuves : /work/preuves/cycle128/.
+#
+#
 # NE PAS RECONSTRUIRE. Le md5 d'un ZIP JetBrains n'est PAS un critère de
 # reproductibilité garanti (mesuré le 04/11 par la mère : deux ZIP de même
 # contenu, md5 différents — ils avaient été construits avec une configuration
@@ -84,7 +98,7 @@
 # ATTENTION : une empreinte qui ne correspond pas à cette valeur = le fichier
 # reçu n'est pas celui qui a été annoncé. Ne pas téléverser.
 
-9687a8551e4d4147558c772d34b9bffd888303921b12cac8e94ab45a415578d9  build/distributions/FindinCommitHistory-0.0.1.zip
+8e657c0c2e8b36034cb83767ed9fe53be32abd2d5d564bac4be4326ba66720a1  build/distributions/FindinCommitHistory-0.0.1.zip
 
 # md5 (32 hex) — commenter pour que « sha256sum -c SHA256.txt » n'affiche aucun avertissement :
-# 00f2bc2495fcd34b7a46cc9da5e8a8d4
+# 25d82c71a9782c0798cbd2c27c0be242

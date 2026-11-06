@@ -6,7 +6,7 @@
 > lu ou posé. Le plugin n'est **pas** publié au 05/11/2026 18:31.
 >
 > **Source de vérité** : `/work/pickaxe/` (code, `plugin.xml`, `SHA256.txt`, `FICHE-MARKETPLACE.md`).
-> Les empreintes ci-dessous sont celles du **ZIP livré** (reconstruit le 05/11 à 21:39 : revue du jury `aba5` + ajout de la copie du hash) : **ne pas reconstruire**.
+> Les empreintes ci-dessous sont celles du **ZIP livré** (reconstruit le 06/11 à 02:52 : revue du jury `aba5`, ajout de la copie du hash, puis **tri des résultats par date décroissante**) : **ne pas reconstruire**.
 
 ---
 
@@ -15,10 +15,10 @@
 | | |
 |---|---|
 | **Chemin** | `/work/pickaxe/build/distributions/FindinCommitHistory-0.0.1.zip` |
-| Taille | **3 133 212 octets** (400 Mo max selon la doc officielle — large marge) |
-| Construit le | 2026-11-05 **21:39:58** CET (`scripts/build_zip.sh`, 0 téléchargement, 0 $), **après la revue du jury `aba5` et l'ajout de la copie du hash** |
-| **md5** | `00f2bc2495fcd34b7a46cc9da5e8a8d4` |
-| **sha256** | `9687a8551e4d4147558c772d34b9bffd888303921b12cac8e94ab45a415578d9` |
+| Taille | **3 133 459 octets** (400 Mo max selon la doc officielle — large marge) |
+| Construit le | 2026-11-06 **02:52:16** CET (`scripts/build_zip.sh`, 0 téléchargement, 0 $), **après la revue du jury `aba5`, l'ajout de la copie du hash et le tri des résultats par date décroissante** |
+| **md5** | `25d82c71a9782c0798cbd2c27c0be242` |
+| **sha256** | `8e657c0c2e8b36034cb83767ed9fe53be32abd2d5d564bac4be4326ba66720a1` |
 | Source | `/work/pickaxe/SHA256.txt` (source de vérité unique), § 8 de `FICHE-MARKETPLACE.md` |
 
 **Contrôle avant de cliquer « Submit »** (à faire sur la machine qui détient le fichier) :
@@ -27,11 +27,11 @@
 cd /work/pickaxe
 sha256sum -c SHA256.txt          # doit afficher : build/distributions/FindinCommitHistory-0.0.1.zip: OK
 md5sum    build/distributions/FindinCommitHistory-0.0.1.zip
-# attendu : 00f2bc2495fcd34b7a46cc9da5e8a8d4
+# attendu : 25d82c71a9782c0798cbd2c27c0be242
 ```
 
 ⚠ Une empreinte différente ⇒ **le fichier reçu n'est pas celui annoncé** : ne pas téléverser.
-### Ce que le ZIP livré contient (05/11 21:39)
+### Ce que le ZIP livré contient (06/11 02:52)
 
 * **Copie du hash** : dans la liste des résultats, un **double-clic** (ou le bouton
   **« Copy hash »**) met l'identifiant **complet** du commit dans le presse-papier.
@@ -39,6 +39,13 @@ md5sum    build/distributions/FindinCommitHistory-0.0.1.zip
 * Les correctifs des cycles 122 et 123 : fusions non dupliquées, annulation réelle,
   fuite de ressource fermée, blobs de plus de 64 Mo ignorés au lieu d'être
   signalés à tort.
+* **L'ordre des résultats est garanti du plus récent au plus ancien** (cycle 128). Le
+  parcours de JGit est topologique (comme `git log`) : il rend un commit avant ses
+  enfants, donc ce n'est pas un ordre par date quand les dates de commit sont dans
+  le désordre (décalage d'horloge, cherry-pick, rebase). Les résultats sont donc triés
+  explicitement par date de commit décroissante — la promesse « most recent first »
+  de la fiche est ainsi tenue. Test : `ChronologicalOrderTest` (rouge avant le
+  correctif, vert après) ; suite complète : **57 tests, 57 verts**.
 
 ⚠ La description et les change-notes du formulaire (champs 5 et 6) sont ceux du
 `plugin.xml`, qui n'a **pas** été modifié : ils ne mentionnent donc pas encore la copie
@@ -70,7 +77,7 @@ Chaque ligne = **la valeur EXACTE à saisir** + **le fichier local d'où elle vi
 | 6 | **Change notes** | *ne rien réécrire* — `<change-notes>` du `plugin.xml` (1 189 car. bruts, **963 car. de texte réel**) | `plugin.xml` lignes 28–48 | Coller **exactement** le bloc ci-dessous. La mère : « copie-le, ne le réécris pas ». |
 | 7 | **License** (liste déroulante) | `MIT` | `/work/pickaxe/LICENSE` (1 065 o, texte MIT complet) + `FICHE-MARKETPLACE.md` § 4 | Décision de la mère du 05/11/2026. |
 | 8 | **License URL** | `https://labs.chiffreo.ch/find-in-commit-history-eula.html` | `/work/pickaxe/EULA.md` + consigne ; page en ligne | **HTTP 200, 4 253 o** (re-vérifié le 05/11/2026 18:31). Doc officielle : « You must provide your own end user license agreement ». |
-| 9 | **Source code URL** | `https://github.com/tgg49099-dotcom/find-in-commit-history` | consigne ; dépôt public `git remote` | commit du CODE **1dbbcb0eb9b9efc55e42a3f8f17760b7af3eb9ef** (des commits de documentation peuvent être au-dessus), **67 fichiers** suivis (re-vérifié le 05/11 21:20). Obligatoire : licence open-source ⇒ lien du code source. |
+| 9 | **Source code URL** | `https://github.com/tgg49099-dotcom/find-in-commit-history` | consigne ; dépôt public `git remote` | commit du CODE **d5da65779adf50ef1ccba809a9878399a68c20ff** (des commits de documentation peuvent être au-dessus), **70 fichiers** suivis (re-vérifié le 06/11 02:55). Obligatoire : licence open-source ⇒ lien du code source. |
 | 10 | **Privacy policy URL** | `https://labs.chiffreo.ch/find-in-commit-history-privacy.html` | `FICHE-MARKETPLACE.md` § 5 (ligne `privacyPolicyUrl`) | **HTTP 200, 4 754 o** (re-vérifié le 05/11/2026 18:31). |
 | 11 | **Support / bug tracker URL** | `https://github.com/tgg49099-dotcom/find-in-commit-history/issues` | consigne ; `FICHE-MARKETPLACE.md` § 5 (`bugtrackerUrl`) | — |
 | 12 | **Category** | `VCS` | `FICHE-MARKETPLACE.md` § 3 ; API `GET /api/tags` → `{"id":250,"name":"VCS","link":"/tag/250-vcs"}` | **Tag officiel** de la liste du Marketplace (170 entrées). |
@@ -154,7 +161,7 @@ Chaque ligne = **la valeur EXACTE à saisir** + **le fichier local d'où elle vi
 3. **Remplir le formulaire** — reprendre les 20 lignes du § 1, dans l'ordre des champs.
    Les blocs longs (5 et 6) se collent tels quels, **sans retouche**.
 4. **Déposer le ZIP** — joindre `/work/pickaxe/build/distributions/FindinCommitHistory-0.0.1.zip`
-   (3 133 212 o). **Ne pas zipper, renommer ni re-compresser** le fichier.
+   (3 133 459 o). **Ne pas zipper, renommer ni re-compresser** le fichier.
 5. **Options de distribution** — prix `Free`, canal par défaut, **pas** de canal custom,
    **hidden décoché**, **pas** d'ads, `since-build 262`, catégorie `VCS`,
    mots-clés `git pickaxe search history log`, puis joindre les **3 captures** du § 3.
@@ -168,8 +175,9 @@ Chaque ligne = **la valeur EXACTE à saisir** + **le fichier local d'où elle vi
 
 ## 3. Les 3 captures à joindre (si le formulaire en demande)
 
-**Prises sur le ZIP LIVRÉ** (md5 `00f2bc2495fcd34b7a46cc9da5e8a8d4`) le 05/11/2026 à 21:45, dans
-PyCharm 2026.2.4 (build 262.11879.98). Format **1200 × 780 px** (minimum officiel 1200 × 760) :
+**Prises sur le ZIP du 05/11/2026** — le ZIP livré du 06/11/2026 n'en diffère que par le tri des
+résultats, qui ne change rien à ces écrans — le 05/11/2026 à 21:45, dans PyCharm 2026.2.4
+(build 262.11879.98). Format **1200 × 780 px** (minimum officiel 1200 × 760) :
 le **dialogue du plugin remplit le cadre**, il n'y a **aucun fond d'IDE** (le recadrage est le
 rectangle exact de la fenêtre du dialogue) et **aucune bulle jaune**.
 
