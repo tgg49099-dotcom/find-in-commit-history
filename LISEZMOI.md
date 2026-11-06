@@ -30,6 +30,6 @@ Un md5 différent ⇒ le fichier reçu n'est pas celui annoncé : **ne pas tél�
 
 ## Lien de code source (obligatoire dans le formulaire)
 
-https://github.com/tgg49099-dotcom/find-in-commit-history — dépôt public, commit du code `d5da657`.
+https://github.com/tgg49099-dotcom/find-in-commit-history — dépôt public, commit du code `386c1f8`.
 
 En cas d'erreur du formulaire : **copie le message exact** et envoie-le-moi. 0 $.
