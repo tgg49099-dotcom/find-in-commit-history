@@ -193,15 +193,23 @@ verif "aucun md5 perime dans les documents vivants (dossier, fiches, produit)" \
 # --- 10. taches Jules ---------------------------------------------------
 echo
 echo "[10] taches Jules deposees"
+# La pompe Jules CONSOMME la file : au 06/11/2026 20:12:57 elle a pris les 6
+# lignes de /work/jules-a-faire.txt (voir /work/jules-etat.txt : "0 en attente
+# dans ta file"). Le controle porte donc sur l'UNION de la file courante et
+# de l'archive des taches deposees (copie exacte conservee dans les preuves).
 JL=/work/jules-a-faire.txt
-N=$(grep -c ' | ' "$JL")
+ARCH=/work/preuves/cycle142/jules-depose-6-taches.txt
+JT=$(cat "$JL" "$ARCH" 2>/dev/null | grep ' | ')
+N=$(printf '%s\n' "$JT" | grep -c ' | ')
 verif "3 a 6 taches deposees" "$([ "$N" -ge 3 ] && [ "$N" -le 6 ] && echo 1 || echo 0)" "($N lignes)"
 verif "chaque ligne de tache a la forme 'chemin | consigne'" \
-      "$(grep ' | ' "$JL" | awk -F' \\| ' 'NF!=2{bad=1} END{exit bad+0}' && echo 1 || echo 0)"
+      "$(printf '%s\n' "$JT" | awk -F' \\| ' 'NF!=2{bad=1} END{exit bad+0}' && echo 1 || echo 0)"
 verif "les chemins sont relatifs a /work et existent" \
-      "$(grep ' | ' "$JL" | while IFS='|' read -r p _; do [ -e "/work/$(echo "$p" | tr -d ' ')" ] || exit 1; done && echo 1 || echo 0)"
+      "$(printf '%s\n' "$JT" | while IFS='|' read -r p _; do [ -e "/work/$(echo "$p" | tr -d ' ')" ] || exit 1; done && echo 1 || echo 0)"
 verif "les chemins commencent par produits/pickaxe (dossier de produit reconnu)" \
-      "$(grep ' | ' "$JL" | cut -d'|' -f1 | tr -d ' ' | grep -c '^produits/pickaxe/' | grep -q '^6$' && echo 1 || echo 0)"
+      "$(printf '%s\n' "$JT" | cut -d'|' -f1 | tr -d ' ' | grep -c '^produits/pickaxe/' | grep -q '^6$' && echo 1 || echo 0)"
+verif "la file est vide (les 6 taches ont ete reprises par la pompe)" \
+      "$([ "$(grep -c ' | ' "$JL")" = "0" ] && echo 1 || echo 0)"
 
 rm -rf "$TMP"
 echo

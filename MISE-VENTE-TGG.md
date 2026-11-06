@@ -24,7 +24,7 @@
 > produit / le prix / l'essai dans « Sales Info », puis activer les ventes).
 >
 > ⚠ **Cette version est celle qui est dans le paquet**
-> `/work/A_ENVOYER/pickaxe/dossier-pickaxe.zip` (reconstruit le 06/11/2026 à 20:2x avec le ZIP
+> `/work/A_ENVOYER/pickaxe/dossier-pickaxe.zip` (reconstruit le 06/11/2026 à 20:28 avec le ZIP
 > 0.0.2 et la correction du statut commerçant ; son md5 est donné dans le rapport du cycle). La
 > copie de `MISE-VENTE-TGG.md` **du paquet** et ce fichier-ci sont **identiques** (même md5).
 

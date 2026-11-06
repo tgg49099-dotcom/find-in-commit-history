@@ -322,8 +322,10 @@ if os.path.isdir(racine):
         zip_livre = candidats[0][1]
         dossier_livraison = candidats[0][2]
 reel = md5(zip_livre or zip_p)
+h_contenu = ""
 if zip_livre:
     h1, h2 = hash_contenu(zip_livre), hash_contenu(zip_p)
+    h_contenu = h1
     if h1 != h2:
         print("ECHEC : le ZIP livre (%s) et le ZIP du build (%s) n'ont pas le MEME CONTENU "
               "(hash de contenu %s / %s) : le fichier verifie n'est pas celui qui sera envoye a Tgg"
@@ -333,6 +335,15 @@ if zip_livre:
 # empreintes legitimement citables : le ZIP livre + les fichiers A L'INTERIEUR du ZIP
 # (le md5 du jar interne est cite legitement dans la doc de publication du slot 2).
 legitimes = {reel}
+# 06/11/2026 20:2x (slot 5) : le HASH DE CONTENU du ZIP livre est une empreinte
+# legitimement citable — la consigne 5f (D4) impose de citer dans le RAPPORT le
+# hash de contenu du ZIP livre ET celui du ZIP reconstruit depuis le commit public
+# (c'est la preuve DSA). Le pre-vol le refusait parce qu'il ne connaissait que des
+# md5 de FICHIERS (faux positif : le ZIP etait parfaitement conforme).
+# On n'ajoute QUE le hash de contenu CALCULE ici (h1) : une valeur erronee ou
+# perimee reste refusee, le controle des md5 perimes reste actif.
+if h_contenu:
+    legitimes.add(h_contenu)
 # 04/11/2026 12:05 (mere) : les fichiers LIVRES AVEC le ZIP (RELEASE-*.md, SHA256-ET-FICHIERS.txt,
 # jar_interne_*.jar, pousser_source_*.sh) font partie du dossier que Tgg recoit : leurs md5 sont
 # citables. Origine : le 04/11 11:55, /rapports/etat.json citait bb739349... = RELEASE-0.0.21.md,
