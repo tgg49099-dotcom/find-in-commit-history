@@ -16,10 +16,17 @@
 > `approve:false` signifiait « plugin non listé = échec ». **C'était faux.** La procédure réelle,
 > mesurée et vérifiée, est au **§ 3 (étape 2 et étape 6)** et au **§ 6.1**. Sources et date au **§ 9**.
 >
+> ⭐ **Version du 06/11/2026 20:20 — pour la 0.0.2 payante, seuls les 3 gestes de
+> `MISE-VENTE-0.0.2-TGG.md` changent ; les 20 champs de la fiche restent identiques.**
+> Ce document reste la fiche de saisie de la **0.0.1** (gratuite) : les 20 champs, les blocs de
+> texte à coller et la marche à suivre ne changent pas. Pour la **0.0.2 payante**, la marche à
+> suivre est **`MISE-VENTE-0.0.2-TGG.md`** (3 gestes : téléverser le ZIP 0.0.2, saisir le code
+> produit / le prix / l'essai dans « Sales Info », puis activer les ventes).
+>
 > ⚠ **Cette version est celle qui est dans le paquet**
-> `/work/pickaxe-soumission/dossier-pickaxe.zip` (reconstruit le 06/11/2026 après la correction ;
-> son md5 est donné dans le rapport du cycle). La copie de `MISE-VENTE-TGG.md` **du paquet** et ce
-> fichier-ci sont **identiques** (même md5).
+> `/work/A_ENVOYER/pickaxe/dossier-pickaxe.zip` (reconstruit le 06/11/2026 à 20:2x avec le ZIP
+> 0.0.2 et la correction du statut commerçant ; son md5 est donné dans le rapport du cycle). La
+> copie de `MISE-VENTE-TGG.md` **du paquet** et ce fichier-ci sont **identiques** (même md5).
 
 ---
 
@@ -83,7 +90,7 @@ Chaque ligne = **la valeur EXACTE à saisir** + **le fichier local d'où elle vi
 | # | Champ du formulaire | VALEUR EXACTE à saisir | SOURCE | Contrôle / remarque |
 |---|---|---|---|---|
 | 1 | **Vendor profile** (étape 1 du formulaire) | `Tgg Labs` | `src/main/resources/META-INF/plugin.xml` ligne 5 → `<vendor …>Tgg Labs</vendor>` ; API : `GET /api/plugins/35551` → `vendor.id = 21195`, `vendor.publicName = "Tgg Labs"` | ⚠ **Au premier upload, Tgg doit CRÉER le profil vendor** (accepter la Marketplace Developer Agreement puis créer le Vendor profile — doc officielle « Uploading a new plugin », étape 1). Le vendor existe déjà côté API (id **21195**) : si le formulaire propose « Tgg Labs », le sélectionner ; sinon le créer. **Ne pas créer un 2ᵉ vendor.** |
-| 2 | **Vendor email** | `tgg.apps.support@gmail.com` | `plugin.xml` ligne 5 → `<vendor email="tgg.apps.support@gmail.com" …>` | L'email du profil vendor existant est `tgg49099@gmail.com` (API) ; **celui du plugin** est `tgg.apps.support@gmail.com` (celui du `plugin.xml`). C'est ce second qui est demandé ici. |
+| 2 | **Vendor email** | `tgg.apps.support@gmail.com` | `plugin.xml` ligne 5 → `<vendor email="tgg.apps.support@gmail.com" …>` | L'email du profil vendor est l'adresse personnelle du propriétaire (API ; **non reproduite ici**) ; **celui du plugin** est `tgg.apps.support@gmail.com` (celui du `plugin.xml`). C'est ce second qui est demandé ici. |
 | 3 | **Plugin name** | `Find in Commit History` | `plugin.xml` ligne 3 → `<name>` | **22 caractères**. La limite dure est **60** ; la doc *recommande* « 1–4 mots, max 20 caractères » (« *Use a short, relevant, memorable name that's 1-4 words long (max 20 characters). There is a limitation of max 60 characters* ») → **22 > 20 mais ≪ 60 : accepté**. Le nom vient du XML : **il n'est pas modifiable dans le formulaire** (« *The core elements of a plugin's Overview page are extracted from the Plugin Configuration File — plugin.xml and cannot be changed without uploading a new plugin version* »). Un jour plus court = une nouvelle version ; **pas pour le 08/11**. |
 | 4 | **Short description** (≤ 300 car.) | `Find in Commit History: find the commit that added a string in your Git history - git log -S and git log -G, right inside your IDE. 100% local: no account, no telemetry.` | consigne de la mère du 06/11/2026 13:55 — **copier mot pour mot** | **169 caractères mesurés** (≤ 300 ✓, il reste 131). Texte **en anglais** : décision de la mère du 06/11/2026 (doc officielle « *Use English as the primary language* » ; le nom et la description sont déjà en anglais, l'audience du Marketplace est internationale). |
 | 5 | **Description** (longue) | **le bloc du § 2** — c'est la version **mise à jour** de ce fichier (elle contient « git log -S », « git log -G », « find the commit that added », « search in git history », « blame ») | ce fichier, § 2 | Voir § 2 et § 3 étape 3-bis : où la coller exactement. |
@@ -205,8 +212,8 @@ touché). C'est assumé : le ZIP est figé. La copie du hash est, elle, dans la 
    accepter la **Marketplace Developer Agreement** puis **créer le Vendor profile**
    (nom public `Tgg Labs`, email `tgg.apps.support@gmail.com`).
    ⚠ **Statut de commerçant : on n'y touche pas, et ce n'est pas un obstacle.**
-   Le vendor `Tgg Labs` (id 21195) est **non-commerçant** (`isTrader:false`, `isVerified:false`,
-   mesuré par l'API publique le 06/11/2026 12:40) et nos **2 plugins sont déjà en ligne**
+   Le vendor `Tgg Labs` (id 21195) est **commerçant** (`isTrader:true`, mesuré par l'API
+   publique le 06/11/2026 17:48) et nos **2 plugins sont déjà en ligne**
    (113 + 22 téléchargements, pages publiques) : **un plugin gratuit n'a rien à voir avec le
    statut de commerçant**. Ne coche rien, ne remplis **aucun IBAN**, n'invente aucun numéro de
    registre. ⚠ *Si un champ obligatoire empêche de valider : **arrête-toi**, fais **1 capture**
@@ -280,9 +287,8 @@ officielle interdit (« Include desktop backgrounds … in your screenshots »).
 * ❌ Modifier `plugin.xml` (il est dans le ZIP ; la description *publique* se règle dans le panneau
   d'administration, § 3 étape 3-bis).
 * ❌ Toucher au moteur.
-* ❌ **Cocher « trader », déclarer un statut de commerçant, ou remplir un IBAN** — pour **ce**
-  plugin gratuit : acte juridique réservé à Tgg, et **sans effet** (nos 2 plugins sont en ligne
-  avec `isTrader:false`).
+* ❌ **Modifier le statut Trader ou l'IBAN** : ils sont DEJA en place (isTrader:true, IBAN saisi —
+  mesuré par l'API publique le **06/11/2026 20:10**).
 * ❌ Créer un 2ᵉ vendor, ou un compte.
 * ❴ Payer quoi que ce soit (le plugin est gratuit, 0 $).
 
@@ -318,10 +324,10 @@ officielle interdit (« Include desktop backgrounds … in your screenshots »).
 **La preuve que ce n'est pas bloquant : nous.** Nos **2** plugins sont **déjà en ligne** avec le
 **même vendor non-commerçant** :
 
-| Preuve | Mesure (API publique, 06/11/2026 12:40) |
+| Preuve | Mesure (API publique, 06/11/2026 20:10) |
 |---|---|
-| `GET /api/plugins/35416` | HTTP 200 · **113 téléchargements** · `vendor.id = 21195` · `vendor.publicName = "Tgg Labs"` · **`vendor.isTrader: false`** · `vendor.isVerified: false` · page publique : **HTTP 200** |
-| `GET /api/plugins/35551` | HTTP 200 · **22 téléchargements** · **même vendor 21195**, `isTrader: false` · page publique : **HTTP 200** |
+| `GET /api/plugins/35416` | HTTP 200 · **113 téléchargements** · `vendor.id = 21195` · `vendor.publicName = "Tgg Labs"` · **`vendor.isTrader:true`** (mesuré le **06/11/2026 20:10**) · `vendor.isVerified: false` · page publique : **HTTP 200** |
+| `GET /api/plugins/35551` | HTTP 200 · **22 téléchargements** · **même vendor 21195**, `isTrader:true` (mesuré le **06/11/2026 20:10**) · page publique : **HTTP 200** |
 | `GET https://plugins.jetbrains.com/vendor/tgg-labs` | HTTP 200 · les 2 plugins listés |
 
 ⇒ **Un vendor non-commerçant publie des plugins sur le Marketplace.** Le statut de commerçant
@@ -355,7 +361,7 @@ n'est demandé que pour **encaisser des paiements via le Marketplace** — pas p
 | `https://plugins.jetbrains.com/plugin/35416-ml-experiment-cockpit` | **200** | § 6.2 — l'autre plugin du vendor |
 | `https://plugins.jetbrains.com/tag/250-vcs` | **200** | champ 12/13 — tag officiel VCS |
 | `https://plugins.jetbrains.com/api/tags` | **200** | champ 13 — la liste des 170 tags officiels |
-| `https://plugins.jetbrains.com/api/plugins/35551` | **200** | champs 1 et 21 — id vendor 21195, `isTrader:false` |
+| `https://plugins.jetbrains.com/api/plugins/35551` | **200** | champs 1 et 21 — id vendor 21195, `isTrader:true` (mesuré le **06/11/2026 20:10**) |
 | `https://plugins.jetbrains.com/plugin/<ID>-find-in-commit-history` | **404 tant que le ZIP n'est pas téléversé** | champ 21 — l'URL définitive, à compléter après l'upload |
 
 ---
@@ -384,8 +390,8 @@ brouillon « trader » existe déjà, non envoyé).
 | Source | Ce qu'elle dit **exactement** | Relevé |
 |---|---|---|
 | `https://plugins.jetbrains.com/docs/marketplace/release-plugin.html` | « *If this is your initial plugin release, upload the plugin to JetBrains Marketplace* » · « *we will review your plugin within two business days* » · « *If you are switching the model from being a free plugin to paid/freemium, upload an update* » · « *Go to the Sales Info tab on the Plugin page and press the Add to Marketplace button to fill in the sales details* » · « *If you don't see this button, please make sure you specified your banking details under the Trader Details tab for your Vendor profile* » · « *You will receive a notification as soon as the status of the review changes* » | **HTTP 200**, page relue le **06/11/2026 12:33** (13 076 o) — les 6 citations ci-dessus sont **textuelles** |
-| `GET https://plugins.jetbrains.com/api/plugins/35416` | `vendor.id = 21195`, `vendor.publicName = "Tgg Labs"`, **`vendor.isTrader = false`**, `vendor.isVerified = false`, `downloads = 113` | **HTTP 200**, mesuré le **06/11/2026 12:40** |
-| `GET https://plugins.jetbrains.com/api/plugins/35551` | même vendor 21195, **`isTrader = false`**, `downloads = 22` | **HTTP 200**, mesuré le **06/11/2026 12:40** |
+| `GET https://plugins.jetbrains.com/api/plugins/35416` | `vendor.id = 21195`, `vendor.publicName = "Tgg Labs"`, **`vendor.isTrader:true`** (mesuré le **06/11/2026 20:10**), `vendor.isVerified = false`, `downloads = 113` | **HTTP 200**, mesuré le **06/11/2026 20:10** |
+| `GET https://plugins.jetbrains.com/api/plugins/35551` | même vendor 21195, **`isTrader:true`** (mesuré le **06/11/2026 20:10**), `downloads = 22` | **HTTP 200**, mesuré le **06/11/2026 20:10** |
 | `GET https://plugins.jetbrains.com/vendor/tgg-labs` | les 2 plugins du vendor sont listés | **HTTP 200**, mesuré le **06/11/2026 12:40** |
 
 **Ce que ces 4 sources disent ensemble** : la publication d'un plugin **gratuit** passe par

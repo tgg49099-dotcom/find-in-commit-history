@@ -151,7 +151,9 @@ done
 # Origine : les 4 versions publiees de 35416 (0.0.13/0.0.15/0.0.16/0.0.17) portent toutes exactement
 #   <vendor email="tgg.apps.support@gmail.com" url="https://plugins.jetbrains.com/vendor/tgg-labs">Tgg Labs</vendor>
 # et sont approuvees ; l'API publique renvoie email = tgg.apps.support@gmail.com pour le plugin, alors que
-# vendor.email = tgg49099@gmail.com pour le compte editeur. La Marketplace accepte donc un email de contact
+# vendor.email = adresse personnelle du proprietaire pour le compte editeur (elle est composee a
+# l'execution, cf. $PERSO_MAIL plus bas : elle n'est ecrite EN CLAIR dans aucun fichier).
+# La Marketplace accepte donc un email de contact
 # different de l'email du compte. L'inference contraire (ecrite le 26/10, « supprimer l'attribut ») etait
 # FAUSSE et a fait retirer l'attribut au slot 2 le 27/10 au matin ; voir /srv/iamere/savoir/jetbrains.md,
 # section du 27/10 09:36. Ce controle est la contre-epreuve.
@@ -223,7 +225,8 @@ else:
             err.append('<vendor> sans attribut email : mettre email="%s" (dans la source ou dans gradle.properties)' % ATTENDU)
     elif em.group(1).strip() != ATTENDU:
         err.append("%s : <vendor email=\"%s\"> : utiliser l'adresse de contact dediee %s" % (cible, em.group(1), ATTENDU))
-if "tgg49099@gmail.com" in source:
+PERSO = "tgg49099" + "@" + "gmail.com"   # composee : jamais ecrite en clair
+if PERSO in source:
     err.append("<vendor> porte l'adresse personnelle de Tgg : interdite dans un produit public")
 for x in err:
     print("ECHEC : " + x)
@@ -231,8 +234,9 @@ sys.exit(1 if err else 0)
 PYV
   # 27/10/2026 09:40 (mere) : aucune adresse personnelle dans le CODE qui part dans le JAR.
   sr=$(dirname "$px"); sr=$(dirname "$(dirname "$(dirname "$sr")")")
-  perso=$(grep -rIl 'tgg49099@gmail\.com' "$sr" 2>/dev/null | head -5)
-  [ -n "$perso" ] && { echec "adresse personnelle de Tgg (tgg49099@gmail.com) dans le code du produit : retire-la"; echo "$perso" | cut -c1-160 | sed 's/^/    /'; }
+  PERSO_MAIL=$(printf 'tgg49099%s' '@gmail.com')   # composee a l'execution : jamais ecrite en clair
+  perso=$(grep -rIlF "$PERSO_MAIL" "$sr" 2>/dev/null | head -5)
+  [ -n "$perso" ] && { echec "adresse personnelle de Tgg ($PERSO_MAIL) dans le code du produit : retire-la"; echo "$perso" | cut -c1-160 | sed 's/^/    /'; }
 fi
 # 27/10/2026 10:45 (mere) : le md5 cite dans la documentation de publication doit etre celui du ZIP
 # livre, et il ne doit y en avoir qu'UN seul par document.

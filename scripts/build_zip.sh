@@ -177,6 +177,48 @@ NB=$(unzip -l "$ZIP" | grep -c "\.jar$")
 echo "    $NB jar(s)"
 [ "$NB" -eq 3 ] || { echo "    ECHEC : attendu 3 jars"; STATUS=1; }
 
+echo "--- plugin.xml : version et descripteur de produit (0.0.2 payante) ? ---"
+# Le ZIP livre doit porter le descripteur de produit du modele freemium :
+# `version` = 2026.1.0, `release-version` = 20261 (les deux DOIVENT
+# correspondre), `code` = PPICKAXEPRO, `optional="true"`.
+rm -rf "$BUILD/xmlcheck"; mkdir -p "$BUILD/xmlcheck"
+( cd "$BUILD/xmlcheck" && unzip -q -o "$ZIP" "$NAME/lib/$NAME-$VERSION.jar" )
+( cd "$BUILD/xmlcheck" && "$JAR_TOOL" --extract --file "$NAME/lib/$NAME-$VERSION.jar" META-INF/plugin.xml )
+XML="$BUILD/xmlcheck/META-INF/plugin.xml"
+if [ ! -f "$XML" ]; then
+    echo "    ECHEC : plugin.xml introuvable dans le jar du ZIP"
+    STATUS=1
+else
+    check_xml() {
+        local libelle="$1" motif="$2"
+        if grep -qE "$motif" "$XML"; then
+            echo "    OK : $libelle"
+        else
+            echo "    ECHEC : $libelle ($motif absent de plugin.xml)"
+            STATUS=1
+        fi
+    }
+    check_xml "version = 2026.1.0"            '<version>2026\.1\.0</version>'
+    check_xml "release-version = 20261"      'release-version="20261"'
+    check_xml "release-date = 20261106"      'release-date="20261106"'
+    check_xml "code produit = PPICKAXEPRO"  'code="PPICKAXEPRO"'
+    check_xml "optional = true (freemium)"   'optional="true"'
+    check_xml "since-build 243"              'since-build="243"'
+    # `version` et `release-version` doivent correspondre (doc officielle) :
+    # le `release-version` designe la version MAJEURE.MINEURE de la version
+    # du plugin (2026.1.0 -> 20261), le numero de correctif n'y est pas.
+    V=$(grep -oE '<version>[^<]+</version>' "$XML" | head -1 | sed -E 's/.*<version>([^<]+)<\/version>.*/\1/')
+    R=$(grep -oE 'release-version="[^"]+"' "$XML" | head -1 | sed -E 's/.*="([^"]+)".*/\1/')
+    echo "    version=$V  release-version=$R"
+    V_MAJ=$(echo "$V" | cut -d. -f1,2 | tr -d '.')
+    if [ "$V_MAJ" = "$R" ]; then
+        echo "    OK : version et release-version correspondent ($V_MAJ = $R)"
+    else
+        echo "    ECHEC : version majeure ($V_MAJ) et release-version ($R) ne correspondent pas"
+        STATUS=1
+    fi
+fi
+
 echo "--- dependance a un plugin DESACTIVABLE de l'IDE ? ---"
 # Un plugin tiers ne voit pas le classpath de la plateforme : le seul moyen
 # d'y acceder est de declarer une dependance a un plugin de l'IDE.

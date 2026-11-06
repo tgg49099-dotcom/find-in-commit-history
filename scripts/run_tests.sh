@@ -102,6 +102,11 @@ rm -rf "$BUILD/classes" "$BUILD/test-classes"
 mkdir -p "$BUILD/classes" "$BUILD/test-classes" "$BUILD/tmp"
 find "$ROOT/src/main/java/com/tgglabs/pickaxe/engine" -name "*.java" > "$BUILD/main-sources.txt"
 echo "$ROOT/src/main/java/com/tgglabs/pickaxe/GitRepositoryLocator.java" >> "$BUILD/main-sources.txt"
+# Le paquet `pro` (fonctions Pro, etat de licence) ne depend QUE de Java et
+# du moteur : il est donc compile et teste HORS IDE, comme le moteur. C'est
+# ce qui permet de tester le refus « fonction Pro — licence requise » sans
+# lancer PyCharm et sans reseau.
+find "$ROOT/src/main/java/com/tgglabs/pickaxe/pro" -name "*.java" >> "$BUILD/main-sources.txt"
 # HashClipboard est la SEULE classe de l'interface compilee hors IDE : elle
 # ne depend que de l'engine (aucune API de la plateforme), ce qui permet de
 # tester la fonction « double-clic = copier le hash » sans lancer l'IDE.

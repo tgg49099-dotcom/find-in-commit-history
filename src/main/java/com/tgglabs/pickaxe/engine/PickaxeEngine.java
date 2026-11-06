@@ -103,6 +103,12 @@ public final class PickaxeEngine {
         final byte[] needleBytes = needle.getBytes(StandardCharsets.UTF_8);
         final Pattern pathPattern = query.compiledPathFilter();
         final Pattern regex = query.compiledRegex();
+        // Portee : les diffs seulement (coeur gratuit), les diffs ET les
+        // messages de commit, ou les messages de commit seulement
+        // (fonction Pro P1, equivalent de `git log --grep`).
+        final PorteeRecherche portee = query.getPortee();
+        final boolean chercherDansLesMessages = portee != PorteeRecherche.DIFFS;
+        final boolean chercherDansLesDiffs = portee != PorteeRecherche.MESSAGES;
 
         final List<PickaxeHit> hits = new ArrayList<>();
         try (RevWalk walk = new RevWalk(repository);
@@ -149,14 +155,29 @@ public final class PickaxeEngine {
                 if (cancelled.getAsBoolean()) {
                     break;
                 }
-                List<String> matchedPaths = matchingPaths(commit, walk, formatter, query,
-                        needleBytes, pathPattern, regex);
+                List<String> matchedPaths = chercherDansLesDiffs
+                        ? matchingPaths(commit, walk, formatter, query, needleBytes, pathPattern, regex)
+                        : new ArrayList<>();
+                // Portee « messages » : la chaine est cherchee dans le message
+                // complet du commit (titre + corps), comme `git log --grep`.
+                boolean messageTrouve = chercherDansLesMessages
+                        && matchesMessage(commit, query, needle, regex);
                 if (cancelled.getAsBoolean()) {
                     // Annulation au milieu du commit courant : le resultat
                     // partiel est abandonne plutot que remonte incomplet.
                     break;
                 }
-                if (!matchedPaths.isEmpty()) {
+                boolean retenu = !matchedPaths.isEmpty() || messageTrouve;
+                if (retenu && pathPattern != null) {
+                    // Le filtre de chemin porte sur l'ENSEMBLE du resultat :
+                    // un commit n'est retenu que s'il TOUCHE un fichier du
+                    // filtre, meme si la correspondance vient du message
+                    // (`git log --grep -- <chemin>` se comporte ainsi).
+                    // Le calcul n'est fait que pour les commits candidats :
+                    // il lit les arbres, pas les blobs.
+                    retenu = toucheUnCheminDuFiltre(commit, walk, formatter, pathPattern);
+                }
+                if (retenu) {
                     hits.add(new PickaxeHit(
                             commit.getName(),
                             commit.getFullMessage().split("\n", 2)[0].trim(),
@@ -234,29 +255,7 @@ public final class PickaxeEngine {
             return matched;
         }
 
-        RevTree commitTree = walk.parseTree(commit.getTree().getId());
-        RevTree parentTree = null;
-        if (commit.getParentCount() > 0) {
-            // On compare avec le PREMIER parent, comme `git log` par defaut
-            // sur un commit non-merge.
-            RevCommit parent = walk.parseCommit(commit.getParent(0).getId());
-            parentTree = walk.parseTree(parent.getTree().getId());
-        }
-
-        // JGit ne compare que des arbres de commit : on convertit les RevTree
-        // en CanonicalTreeParser (l'iterateur d'arbre du diff). Pour le commit
-        // initial, le parseur "ancien" n'est pas initialise : il est vide,
-        // comme l'arbre vide de git.
-        List<DiffEntry> entries;
-        try (ObjectReader reader = repository.newObjectReader()) {
-            CanonicalTreeParser oldTreeParser = new CanonicalTreeParser();
-            CanonicalTreeParser newTreeParser = new CanonicalTreeParser();
-            newTreeParser.reset(reader, commitTree.getId());
-            if (parentTree != null) {
-                oldTreeParser.reset(reader, parentTree.getId());
-            }
-            entries = formatter.scan(oldTreeParser, newTreeParser);
-        }
+        List<DiffEntry> entries = entreesDuDiff(commit, walk, formatter);
 
         for (DiffEntry entry : entries) {
             // Annulation : on verifie a chaque entree de la boucle de diff,
@@ -307,6 +306,70 @@ public final class PickaxeEngine {
     }
 
     /**
+     * Les editions (fichiers modifies) d'un commit, comparees a son PREMIER
+     * parent.
+     *
+     * <p>JGit ne compare que des arbres de commit : on convertit les RevTree
+     * en CanonicalTreeParser (l'iterateur d'arbre du diff). Pour le commit
+     * initial, le parseur "ancien" n'est pas initialise : il est vide,
+     * comme l'arbre vide de git.</p>
+     */
+    private List<DiffEntry> entreesDuDiff(RevCommit commit,
+                                          RevWalk walk,
+                                          DiffFormatter formatter) throws IOException {
+        RevTree commitTree = walk.parseTree(commit.getTree().getId());
+        RevTree parentTree = null;
+        if (commit.getParentCount() > 0) {
+            // On compare avec le PREMIER parent, comme `git log` par defaut
+            // sur un commit non-merge.
+            RevCommit parent = walk.parseCommit(commit.getParent(0).getId());
+            parentTree = walk.parseTree(parent.getTree().getId());
+        }
+        try (ObjectReader reader = repository.newObjectReader()) {
+            CanonicalTreeParser oldTreeParser = new CanonicalTreeParser();
+            CanonicalTreeParser newTreeParser = new CanonicalTreeParser();
+            newTreeParser.reset(reader, commitTree.getId());
+            if (parentTree != null) {
+                oldTreeParser.reset(reader, parentTree.getId());
+            }
+            return formatter.scan(oldTreeParser, newTreeParser);
+        }
+    }
+
+    /**
+     * {@code true} si le commit touche au moins un fichier correspondant au
+     * filtre de chemin.
+     *
+     * <p>Seuls les ARBRES sont lus (pas les blobs) : c'est la liste des
+     * fichiers modifies qui compte, pas leur contenu. Un commit de fusion
+     * est ignore, comme dans {@code git log -- <chemin>} (sans {@code -m},
+     * git n'affiche pas les fusions).</p>
+     */
+    private boolean toucheUnCheminDuFiltre(RevCommit commit,
+                                            RevWalk walk,
+                                            DiffFormatter formatter,
+                                            Pattern pathPattern) {
+        if (commit.getParentCount() > 1) {
+            return false;
+        }
+        try {
+            for (DiffEntry entry : entreesDuDiff(commit, walk, formatter)) {
+                String path = entry.getChangeType() == DiffEntry.ChangeType.DELETE
+                        ? entry.getOldPath()
+                        : entry.getNewPath();
+                if (pathPattern.matcher(path).find()) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            // Arbre illisible : le commit ne peut pas etre attribue a un
+            // chemin, il n'est donc pas retenu.
+            return false;
+        }
+        return false;
+    }
+
+    /**
      * Mode {@code -G} : une ligne ajoutee ou supprimee matche l'expression.
      *
      * <p>On passe par la liste des editions ({@link EditList}) : elle donne,
@@ -343,6 +406,28 @@ public final class PickaxeEngine {
             }
         }
         return false;
+    }
+
+    /**
+     * Portee « messages » : la chaine est cherchee dans le message COMPLET du
+     * commit (titre + corps), comme le fait {@code git log --grep}.
+     *
+     * <p>En mode REGEX, l'expression est appliquee au message ; en mode
+     * STRING, la chaine est cherchee telle quelle (sous-chaine). Un commit de
+     * fusion est ici pris en compte : {@code git log --grep} liste aussi les
+     * fusions, qui n'ont pas de diff propre.</p>
+     *
+     * @return {@code true} si le message du commit correspond
+     */
+    private boolean matchesMessage(RevCommit commit, PickaxeQuery query, String needle, Pattern regex) {
+        String message = commit.getFullMessage();
+        if (message == null) {
+            return false;
+        }
+        if (query.getMode() == PickaxeMode.REGEX) {
+            return regex != null && regex.matcher(message).find();
+        }
+        return message.contains(needle);
     }
 
     /**

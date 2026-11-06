@@ -119,3 +119,44 @@
 
 # md5 (32 hex) — commenter pour que « sha256sum -c SHA256.txt » n'affiche aucun avertissement :
 # b5e1d00b93eec4883699f9ea6eaed649
+
+# =========================================================================
+# 0.0.2 — VERSION PAYANTE (MODELE FREEMIUM NATIF) — 06/11/2026
+# =========================================================================
+# Plugin      : Find in Commit History (id com.tgglabs.pickaxe), version 0.0.2
+# Fichier     : build/distributions/FindinCommitHistory-0.0.2.zip
+# Taille      : 3 159 786 octets
+# Construit le: 2026-11-06 20:06 (CET), scripts/build_zip.sh (0 téléchargement,
+#               0 $), compilé contre l'IDE local PyCharm 2026.2.4 (build 262.11879.98)
+#
+# ZIP REFAIT le 06/11/2026 à 20:06 (CET) : le CODE PRODUIT passe de `pickaxe-pro`
+# à `PPICKAXEPRO`, pour respecter le format officiel du Marketplace (« *Start with
+# the letter P … 4-15 characters … CAPITAL LETTERS ONLY* », doc
+# plugins.jetbrains.com/docs/marketplace/add-required-parameters.html). C'est le SEUL
+# changement du code : le ZIP precedent est PERIME, ses empreintes ne sont plus
+# citees ici (une seule valeur courante par document, pour eviter le pre-vol rouge).
+#
+# ATTENTION : la version ECRITE dans plugin.xml est `2026.1.0` (et non 0.0.2) :
+# pour un plugin vendu par le Marketplace, `<version>` doit correspondre au
+# `release-version` du <product-descriptor> (2026.1.0 <-> 20261). Le nom du
+# ZIP reste celui que le build donne : FindinCommitHistory-0.0.2.zip.
+#
+# Contenu du descripteur de produit (vérifié DANS le ZIP livré) :
+#   <product-descriptor code="PPICKAXEPRO"
+#                       release-date="20261106"
+#                       release-version="20261"
+#                       optional="true"/>
+#   <version>2026.1.0</version>   et   <idea-version since-build="243"/>
+#
+# Contenu du ZIP : 3 jars (plugin, JGit 6.10.1, JavaEWAH 1.1.12), aucun slf4j.
+# Suite de tests de ce build : **82 tests, 82 verts** (scripts/run_tests.sh).
+# Contre-épreuve de la licence : RED puis VERT (scripts/contre_epreuve_licence.sh).
+#
+# md5    : 9bb750148ad16f273355c4b512980027
+# sha256 : da160fe666879508b0cd69f917a0f90d4c753df730f8f545310b2099adf208f7
+# taille : 3 159 786 octets
+# =========================================================================
+da160fe666879508b0cd69f917a0f90d4c753df730f8f545310b2099adf208f7  build/distributions/FindinCommitHistory-0.0.2.zip
+
+# md5 (32 hex) — commenter pour que « sha256sum -c SHA256.txt » n'affiche aucun avertissement :
+# 9bb750148ad16f273355c4b512980027

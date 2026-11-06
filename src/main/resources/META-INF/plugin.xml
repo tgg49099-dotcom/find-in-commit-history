@@ -1,8 +1,35 @@
 <idea-plugin>
   <id>com.tgglabs.pickaxe</id>
   <name>Find in Commit History</name>
-  <version>0.0.1</version>
+
+  <!-- VERSION DE LA 0.0.2 (PAYANTE, MODELE FREEMIUM).
+       Pour un plugin vendu par le Marketplace, la doc officielle impose que
+       le parametre `version` CORRESPONDE au `release-version` du descripteur
+       de produit (« Please make sure that the release-version and the version
+       parameters match », doc « add-required-parameters ») :
+         version = 2026.1.0  <->  release-version = 20261.
+       La numerotation 0.0.x (celle de la 0.0.1) n'est donc plus utilisee
+       comme version de plugin : elle reste le nom interne de nos livrables
+       (ZIP 0.0.2). -->
+  <version>2026.1.0</version>
+
   <vendor email="tgg.apps.support@gmail.com" url="https://plugins.jetbrains.com/vendor/tgg-labs">Tgg Labs</vendor>
+
+  <!-- DESCRIPTEUR DE PRODUIT (OBLIGATOIRE pour un plugin vendu par le
+       Marketplace, doc « add-required-parameters »).
+       - `code`       : le code produit, celui que la Marketplace associe a
+                        la licence vendue ; il doit etre identique a celui
+                        saisi dans l'onglet « Sales Info » par Tgg ;
+       - `release-date`: la date de la version majeure (format YYYYMMDD) ;
+       - `release-version` : doit correspondre a `version` (20261 = 2026.1) ;
+       - `optional="true"` : c'est ce qui rend le plugin FREEMIUM — l'IDE ne
+                        demande pas de licence au demarrage, et c'est NOTRE
+                        code qui decide ce qui est Pro (les 4 fonctions
+                        P1-P4) et ce qui reste gratuit. -->
+  <product-descriptor code="PPICKAXEPRO"
+                      release-date="20261106"
+                      release-version="20261"
+                      optional="true"/>
 
   <description><![CDATA[
     <p>Search your <b>Git history</b> for the commits that add or remove a
@@ -20,30 +47,41 @@
       <li><b>Works with your own repository</b> — the history is read locally,
       nothing is sent anywhere.</li>
     </ul>
+    <p><b>Free and Pro.</b> The search itself stays <b>free for everyone</b>:
+    <code>-S</code>/<code>-G</code>, the path filter and the hash copy. The
+    <b>Pro</b> licence (29 $/year, personal) adds four things, on top of the
+    free core — nothing is taken away from the free version:</p>
+    <ul>
+      <li><b>Search the commit messages</b> (<code>--grep</code>): find the
+      commit that only <em>mentioned</em> the string.</li>
+      <li><b>Export the results</b>: CSV, Markdown, or a list of patches to
+      replay in a terminal.</li>
+      <li><b>Save your searches</b>, per repository.</li>
+      <li><b>Search every repository</b> open in the project at once.</li>
+    </ul>
   ]]></description>
 
   <!-- Notes de version : element racine de <idea-plugin>, affichees par le
        Marketplace a la publication. Texte reel (le controle de pre-vol les
        refuse si elles sont vides ou absentes). -->
   <change-notes><![CDATA[
-    <p><b>First release.</b> Find the commits that added or removed a string in
-    your Git history — the <code>git log -S</code> / <code>git log -G</code>
-    ("pickaxe") search, inside your IDE.</p>
+    <p><b>Free and Pro.</b> The free search does not change: it stays free
+    for everyone, with no account and no telemetry. This version adds a
+    <b>Pro</b> licence (29 $/year, personal, 14-day trial) that unlocks four
+    extra features.</p>
     <ul>
-      <li>Type a string, get the commits that added or removed it (a change in
-      the <em>number</em> of occurrences counts), most recent first, across
-      every reference of the repository — not only the current branch — even if
-      the string no longer exists in your working tree. The search stops after
-      500 matching commits.</li>
-      <li>Match the diff itself with a regular expression: added <em>and</em>
-      removed lines are tested, like <code>git log -G</code> (Java regular
-      expressions; a merge commit is not diffed, so a change brought in by a
-      merge is reported once, by the commit that made it).</li>
-      <li>Restrict the search to the files you care about: the path filter is
-      a regular expression matched anywhere in the path. Binary files are
-      ignored.</li>
-      <li>The history is read locally from the repository on disk — the plugin
-      makes no network access at runtime, no account, no telemetry.</li>
+      <li><b>Search the commit messages</b> (<code>git log --grep</code>):
+      the search can now run on the commit messages, on the diffs, or on
+      both.</li>
+      <li><b>Export the results</b>: CSV, Markdown, or a list of
+      <code>git show</code> commands to replay the selection in a terminal.</li>
+      <li><b>Save your searches</b>: the last 10 searches are kept per
+      repository, in the settings of your IDE.</li>
+      <li><b>Search every repository</b> of the project at once, with the
+      results grouped per repository.</li>
+      <li>The free core is unchanged: <code>-S</code>/<code>-G</code>, path
+      filter, copy of the hash — still free, still local, still without an
+      account.</li>
     </ul>
   ]]></change-notes>
 
@@ -63,6 +101,14 @@
   <idea-version since-build="243"/>
 
   <depends>com.intellij.modules.platform</depends>
+
+  <!-- Les extensions du plugin. Ici : le service qui conserve les
+       recherches enregistrees (fonction Pro P3) dans les reglages locaux de
+       l'IDE (fichier pickaxe.xml). C'est une donnee LOCALE : aucune
+       telemetrie, aucun envoi. -->
+  <extensions defaultExtensionNs="com.intellij">
+    <applicationService serviceImplementation="com.tgglabs.pickaxe.ide.StockageRecherchesIDE"/>
+  </extensions>
 
   <!-- Les actions se declarent dans un bloc <actions> de premier niveau, et
        NON dans <extensions> : placees dans <extensions>, elles sont

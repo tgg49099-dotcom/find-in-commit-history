@@ -124,7 +124,14 @@ intellijPlatform {
     pluginConfiguration {
         id = "com.tgglabs.pickaxe"
         name = (project.findProperty("pluginName") as String?) ?: "Find in Commit History"
-        version = project.version.toString()
+        // La version ECRITE dans le <version> de plugin.xml n'est PAS
+        // toujours celle du livrable : pour un plugin vendu par le
+        // Marketplace, elle doit correspondre au `release-version` du
+        // <product-descriptor> (doc « add-required-parameters ») :
+        // 2026.1.0 <-> 20261. La property `pluginMarketplaceVersion` porte
+        // cette valeur ; sinon, on retombe sur la version du projet.
+        version = (project.findProperty("pluginMarketplaceVersion") as String?)
+            ?: project.version.toString()
         ideaVersion {
             sinceBuild = (project.findProperty("pluginSinceBuild") as String?) ?: "262"
             // `until-build` is written ONLY if the property exists AND is not

@@ -20,6 +20,7 @@ public final class PickaxeQuery {
     private final String pathFilter;
     private final boolean includeBinary;
     private final int maxResults;
+    private final PorteeRecherche portee;
 
     private PickaxeQuery(Builder builder) {
         this.mode = builder.mode;
@@ -27,6 +28,7 @@ public final class PickaxeQuery {
         this.pathFilter = builder.pathFilter;
         this.includeBinary = builder.includeBinary;
         this.maxResults = builder.maxResults;
+        this.portee = builder.portee;
     }
 
     public static Builder builder(PickaxeMode mode, String needle) {
@@ -53,6 +55,16 @@ public final class PickaxeQuery {
 
     public int getMaxResults() {
         return maxResults;
+    }
+
+    /**
+     * Ou la chaine est cherchee.
+     *
+     * <p>Par defaut : {@link PorteeRecherche#DIFFS} — le coeur gratuit
+     * (le comportement historique du moteur).</p>
+     */
+    public PorteeRecherche getPortee() {
+        return portee;
     }
 
     /** Le filtre de chemin compile, ou {@code null}. */
@@ -86,6 +98,7 @@ public final class PickaxeQuery {
                 + ", pathFilter=" + pathFilter
                 + ", includeBinary=" + includeBinary
                 + ", maxResults=" + maxResults
+                + ", portee=" + portee
                 + '}';
     }
 
@@ -97,6 +110,7 @@ public final class PickaxeQuery {
         private String pathFilter;
         private boolean includeBinary = false;
         private int maxResults = 500;
+        private PorteeRecherche portee = PorteeRecherche.DIFFS;
 
         private Builder(PickaxeMode mode, String needle) {
             if (mode == null) {
@@ -133,6 +147,22 @@ public final class PickaxeQuery {
                 throw new IllegalArgumentException("maxResults must be greater than 0");
             }
             this.maxResults = maxResults;
+            return this;
+        }
+
+        /**
+         * Ou la chaine est cherchee.
+         *
+         * <p>Les portees {@link PorteeRecherche#DIFFS_ET_MESSAGES} et
+         * {@link PorteeRecherche#MESSAGES} correspondent a la fonction Pro
+         * P1 ({@code git log --grep}). Le defaut reste
+         * {@link PorteeRecherche#DIFFS}.</p>
+         */
+        public Builder portee(PorteeRecherche portee) {
+            if (portee == null) {
+                throw new IllegalArgumentException("portee must not be null");
+            }
+            this.portee = portee;
             return this;
         }
 
