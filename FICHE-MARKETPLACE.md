@@ -95,17 +95,18 @@ réel pour la description, 963 pour les change-notes. Ne pas les réécrire.)*
 
 | Champ | Valeur | Raison |
 |---|---|---|
-| `since-build` | `262` | IntelliJ Platform 2026.2 — le numéro de build exact de l'IDE de référence (PyCharm 2026.2.4 = build 262.11879.98, mesuré dans `product-info.json`) ; c'est aussi l'IDE contre lequel le plugin est compilé |
+| `since-build` | `243` | IntelliJ Platform 2024.3 — le numéro de build exact de l'IDE de **compatibilité** (PyCharm Community 2024.3 = build 243.21565.199, mesuré dans `product-info.json`) ; Plugin Verifier officiel sur cet IDE : *« Compatible. 1 usage of deprecated API »* (0 problème de compatibilité). Le plugin reste **compilé** contre PyCharm 2026.2.4 (build 262.11879.98) : l'IDE de compilation et l'IDE de compatibilité sont deux choses différentes |
 | `until-build` | *absent* | le plugin ne dépend que de `com.intellij.modules.platform` ; aucune borne haute n'est justifiée par une mesure |
 | Dépendances | `com.intellij.modules.platform` **seule** | 0 dépendance à un plugin désactivable |
-| Java | bytecode 21 | niveau de référence de la plateforme 2026.2 |
+| Java | bytecode 17 | mesuré dans le ZIP livré (`javap` : class file 61) ; la plateforme 2024.3 tourne en Java 21, le bytecode 17 y est accepté |
 
 ## 7. Ce que la fiche ne cache pas (limites connues, assumées)
 
 - L'interface est un **dialogue modal** : pas encore de panneau de résultats cliquable, pas de
   diff intégrée, pas de raccourci clavier pour l'action (elle est dans le menu
   **Tools ▸ Find in Commit History…**, et dans *Find Action*).
-- La preuve de chargement a été faite sur **PyCharm 2026.2.4** ; **IntelliJ IDEA n'a pas été
+- La preuve de chargement a été faite sur **PyCharm 2026.2.4** (IDE de compilation) et sur
+  **PyCharm Community 2024.3** (IDE de compatibilité, `since-build 243`) ; **IntelliJ IDEA n'a pas été
   testé** (le plugin ne dépend que de `com.intellij.modules.platform` : rien dans le code n'est
   spécifique à PyCharm, mais la preuve n'a pas été faite).
 - Le moteur est **entièrement local** : aucune donnée ne sort de la machine.
@@ -119,10 +120,10 @@ réel pour la description, 963 pour les change-notes. Ne pas les réécrire.)*
 | | |
 |---|---|
 | Chemin | `build/distributions/FindinCommitHistory-0.0.1.zip` |
-| Taille | **3 133 212 octets** |
+| Taille | **3 133 609 octets** |
 | Construit le | **2026-11-05 21:39:58 CET** (`scripts/build_zip.sh`, 0 téléchargement, 0 $) |
-| sha256 | `8e657c0c2e8b36034cb83767ed9fe53be32abd2d5d564bac4be4326ba66720a1` |
-| md5 | `25d82c71a9782c0798cbd2c27c0be242` |
+| sha256 | `406d58a44aa3b253b650c3b6f2f6bbc97d737df77ef2497351ace3aab254c82e` |
+| md5 | `b5e1d00b93eec4883699f9ea6eaed649` |
 | Empreintes complètes | `SHA256.txt` (source de vérité unique) |
 | Contenu de `lib/` | `FindinCommitHistory-0.0.1.jar` (24 729 o) · `org.eclipse.jgit-6.10.1.202505221210-r.jar` (3 209 491 o) · `JavaEWAH-1.1.12.jar` (166 891 o) |
 | Ni `slf4j-api` ni `commons-codec` | la plateforme les fournit (`lib/util-8.jar` contient 58 classes `org/slf4j/…`) |
@@ -132,7 +133,7 @@ Vérification par le destinataire :
 ```
 sha256sum -c SHA256.txt          # doit afficher : OK
 md5sum    build/distributions/FindinCommitHistory-0.0.1.zip
-# attendu : 25d82c71a9782c0798cbd2c27c0be242
+# attendu : b5e1d00b93eec4883699f9ea6eaed649
 ```
 
 ## 9. État de la soumission

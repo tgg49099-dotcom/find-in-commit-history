@@ -38,8 +38,8 @@ SOFTWARE.
 ## Conditions particulières
 
 1. **Installation.** L'installation du Plugin dans un IDE (IntelliJ IDEA,
-   PyCharm ou tout autre IDE de la plateforme IntelliJ 2026.2 ou ultérieure,
-   build 262) vaut acceptation pleine et entière du présent contrat.
+   PyCharm ou tout autre IDE de la plateforme IntelliJ 2024.3 ou ultérieure,
+   build 243 ou supérieur) vaut acceptation pleine et entière du présent contrat.
 2. **Aucune donnée transmise.** Le Plugin lit l'historique Git du dépôt
    ouvert dans l'IDE, sur la machine de l'utilisateur, et n'effectue aucune
    requête réseau : aucune donnée n'est transmise à Tgg Labs ni à un tiers.

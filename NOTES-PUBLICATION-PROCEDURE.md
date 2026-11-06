@@ -25,7 +25,7 @@ autre chose que ce qui est mesuré.
 
 | | Valeur attendue | Vérification |
 |---|---|---|
-| Le ZIP livré | md5 `25d82c71a9782c0798cbd2c27c0be242` · sha256 `8e657c0c2e8b36034cb83767ed9fe53be32abd2d5d564bac4be4326ba66720a1` · 3 133 459 o (reconstruit le 06/11/2026 02:52 : correction de l'ordre des résultats) | `cd /work/pickaxe && sha256sum -c SHA256.txt && md5sum build/distributions/FindinCommitHistory-0.0.1.zip` |
+| Le ZIP livré | md5 `b5e1d00b93eec4883699f9ea6eaed649` · sha256 `406d58a44aa3b253b650c3b6f2f6bbc97d737df77ef2497351ace3aab254c82e` · 3 133 609 o (reconstruit le 06/11/2026 07:26 : `since-build 243`, compatibilité IntelliJ 2024.3) | `cd /work/pickaxe && sha256sum -c SHA256.txt && md5sum build/distributions/FindinCommitHistory-0.0.1.zip` |
 | Le numéro numérique | `<ID>` (attribué par le Marketplace à l'upload) | `GET https://plugins.jetbrains.com/api/vendors/tgg-labs/plugins` → le champ `id` de l'entrée `com.tgglabs.pickaxe` |
 | Le commit du CODE dans le dépôt public | `d5da65779adf50ef1ccba809a9878399a68c20ff` (70 fichiers ; des commits de documentation peuvent être au-dessus) | `GET https://api.github.com/repos/tgg49099-dotcom/find-in-commit-history/commits?per_page=1` |
 
@@ -40,7 +40,7 @@ autre chose que ce qui est mesuré.
 | a1 | La page du plugin répond | `curl -s -o /dev/null -w "%{http_code}\n" "https://plugins.jetbrains.com/plugin/<ID>-find-in-commit-history"` | `200` |
 | a2 | La page contient le bon nom | `curl -s "https://plugins.jetbrains.com/plugin/<ID>-find-in-commit-history" \| grep -c "Find in Commit History"` | ≥ 1 |
 | a3 | L'API renvoie la bonne fiche | `curl -s "https://plugins.jetbrains.com/api/plugins/<ID>"` | `xmlId` = `com.tgglabs.pickaxe` · `name` = `Find in Commit History` · `pricingModel` = `FREE` · `isHidden` = `false` · `isBlocked` = `false` |
-| a4 | La version 0.0.1 est listée | `curl -s "https://plugins.jetbrains.com/api/plugins/<ID>/updates"` | un objet `version` = `0.0.1`, `approve` = `true`, `listed` = `true`, `since` = `262`, `size` = `3133212` |
+| a4 | La version 0.0.1 est listée | `curl -s "https://plugins.jetbrains.com/api/plugins/<ID>/updates"` | un objet `version` = `0.0.1`, `approve` = `true`, `listed` = `true`, `since` = `243`, `size` = `3133609` |
 | a5 | Les captures sont bien en ligne | `curl -s "https://plugins.jetbrains.com/api/plugins/<ID>"` → champ `screens` | **3** entrées (les 3 du § e) |
 | a6 | Le ZIP **servi par le Marketplace** est le nôtre | `curl -sL "https://plugins.jetbrains.com/plugin/download?pluginId=<ID>&version=0.0.1" -o /tmp/dl.zip && unzip -p /tmp/dl.zip '*/lib/FindinCommitHistory-0.0.1.jar' \| md5sum` | le md5 du **jar interne** = celui de notre ZIP. ⚠ **le md5 du ZIP servi ne sera pas forcément le nôtre** : le Marketplace réécrit le répertoire central (écart mesuré de 5 660 o sur le plugin 35416). Comparer le **jar**, pas l'enveloppe. |
 | a7 | **Le plugin se charge dans un vrai IDE** | installer le ZIP **téléchargé depuis le Marketplace** dans une config neuve de PyCharm 2026.2.4 et le lancer | ligne de log **exacte** : `Loaded custom plugins: Find in Commit History (0.0.1)` · **0** erreur sur `com.tgglabs.pickaxe` |

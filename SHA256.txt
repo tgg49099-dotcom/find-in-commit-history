@@ -2,8 +2,8 @@
 #
 # Plugin      : Find in Commit History (id com.tgglabs.pickaxe), version 0.0.1
 # Fichier     : build/distributions/FindinCommitHistory-0.0.1.zip
-# Taille      : 3 133 459 octets
-# Construit le: 2026-11-06 02:52:16 (CET), scripts/build_zip.sh (0 téléchargement,
+# Taille      : 3 133 609 octets
+# Construit le: 2026-11-06 07:26:43 (CET), scripts/build_zip.sh (0 téléchargement,
 #               0 $), compilé contre l'IDE local PyCharm 2026.2.4 (build 262.11879.98)
 #
 # ZIP REFAIT le 05/11/2026 à 20:08 après la REVUE DU JURY (demande `aba5`,
@@ -63,6 +63,23 @@
 #   /work/preuves/cycle124/tests-ROUGE-copyhash.log  (3 tests rouges)
 #   /work/preuves/cycle124/tests-VERT-copyhash.log   (55/55 verts)
 #
+# ZIP REFAIT le 06/11/2026 a 07:26 (consigne du 06/11 07:23 : le `since-build`
+# passe de 262 a 243). Il contient, en plus de ce qui precede :
+#  14. `since-build 243` = IntelliJ Platform 2024.3. C'est le SEUL changement
+#      produit : le `<idea-version since-build="262"/>` devient
+#      `<idea-version since-build="243"/>` dans `src/main/resources/META-INF/plugin.xml`
+#      (et `pluginSinceBuild = 243` dans `gradle.properties`).
+#      Mesure du diff (ancien ZIP livre -> ZIP nouveau) :
+#      les 16 `.class` du jar sont BIT A BIT IDENTIQUES ; le seul fichier du
+#      jar qui differe est `META-INF/plugin.xml`, et le seul changement
+#      fonctionnel est l'attribut `since-build` (le bloc de commentaire qui
+#      decrit la compatibilite a ete mis a jour avec lui).
+#      Preuve de compatibilite : Plugin Verifier officiel de JetBrains sur
+#      PC-243.21565.199 -> "Compatible. 1 usage of deprecated API" (0 probleme
+#      de compatibilite) ; le plugin est CHARGE par le vrai IDE 2024.3.
+#      Suite complete de ce build : **57 tests, 57 verts**.
+#      Preuves : /work/preuves/cycle130/.
+#
 # ZIP REFAIT le 06/11/2026 a 02:52 (consigne du 06/11 02:40 : l'ordre des resultats).
 # Il contient, en plus de ce qui precede :
 #  13. l'ORDRE DES RESULTATS est GARANTI du plus recent au plus ancien. Le parcours
@@ -98,7 +115,7 @@
 # ATTENTION : une empreinte qui ne correspond pas à cette valeur = le fichier
 # reçu n'est pas celui qui a été annoncé. Ne pas téléverser.
 
-8e657c0c2e8b36034cb83767ed9fe53be32abd2d5d564bac4be4326ba66720a1  build/distributions/FindinCommitHistory-0.0.1.zip
+406d58a44aa3b253b650c3b6f2f6bbc97d737df77ef2497351ace3aab254c82e  build/distributions/FindinCommitHistory-0.0.1.zip
 
 # md5 (32 hex) — commenter pour que « sha256sum -c SHA256.txt » n'affiche aucun avertissement :
-# 25d82c71a9782c0798cbd2c27c0be242
+# b5e1d00b93eec4883699f9ea6eaed649

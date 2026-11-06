@@ -6,7 +6,7 @@
 > lu ou posé. Le plugin n'est **pas** publié au 05/11/2026 18:31.
 >
 > **Source de vérité** : `/work/pickaxe/` (code, `plugin.xml`, `SHA256.txt`, `FICHE-MARKETPLACE.md`).
-> Les empreintes ci-dessous sont celles du **ZIP livré** (reconstruit le 06/11 à 02:52 : revue du jury `aba5`, ajout de la copie du hash, puis **tri des résultats par date décroissante**) : **ne pas reconstruire**.
+> Les empreintes ci-dessous sont celles du **ZIP livré** (reconstruit le 06/11 à 07:26 : revue du jury `aba5`, ajout de la copie du hash, tri des résultats par date décroissante, puis **reconstruction en `since-build 243` = compatibilité IntelliJ 2024.3**) : **ne pas reconstruire**.
 
 ---
 
@@ -15,10 +15,10 @@
 | | |
 |---|---|
 | **Chemin** | `/work/pickaxe/build/distributions/FindinCommitHistory-0.0.1.zip` |
-| Taille | **3 133 459 octets** (400 Mo max selon la doc officielle — large marge) |
-| Construit le | 2026-11-06 **02:52:16** CET (`scripts/build_zip.sh`, 0 téléchargement, 0 $), **après la revue du jury `aba5`, l'ajout de la copie du hash et le tri des résultats par date décroissante** |
-| **md5** | `25d82c71a9782c0798cbd2c27c0be242` |
-| **sha256** | `8e657c0c2e8b36034cb83767ed9fe53be32abd2d5d564bac4be4326ba66720a1` |
+| Taille | **3 133 609 octets** (400 Mo max selon la doc officielle — large marge) |
+| Construit le | 2026-11-06 **07:26:43** CET (`scripts/build_zip.sh`, 0 téléchargement, 0 $), **après la revue du jury `aba5`, l'ajout de la copie du hash, le tri des résultats par date décroissante et la reconstruction en `since-build 243`** |
+| **md5** | `b5e1d00b93eec4883699f9ea6eaed649` |
+| **sha256** | `406d58a44aa3b253b650c3b6f2f6bbc97d737df77ef2497351ace3aab254c82e` |
 | Source | `/work/pickaxe/SHA256.txt` (source de vérité unique), § 8 de `FICHE-MARKETPLACE.md` |
 
 **Contrôle avant de cliquer « Submit »** (à faire sur la machine qui détient le fichier) :
@@ -27,11 +27,11 @@
 cd /work/pickaxe
 sha256sum -c SHA256.txt          # doit afficher : build/distributions/FindinCommitHistory-0.0.1.zip: OK
 md5sum    build/distributions/FindinCommitHistory-0.0.1.zip
-# attendu : 25d82c71a9782c0798cbd2c27c0be242
+# attendu : b5e1d00b93eec4883699f9ea6eaed649
 ```
 
 ⚠ Une empreinte différente ⇒ **le fichier reçu n'est pas celui annoncé** : ne pas téléverser.
-### Ce que le ZIP livré contient (06/11 02:52)
+### Ce que le ZIP livré contient (06/11 07:26)
 
 * **Copie du hash** : dans la liste des résultats, un **double-clic** (ou le bouton
   **« Copy hash »**) met l'identifiant **complet** du commit dans le presse-papier.
@@ -82,7 +82,7 @@ Chaque ligne = **la valeur EXACTE à saisir** + **le fichier local d'où elle vi
 | 11 | **Support / bug tracker URL** | `https://github.com/tgg49099-dotcom/find-in-commit-history/issues` | consigne ; `FICHE-MARKETPLACE.md` § 5 (`bugtrackerUrl`) | — |
 | 12 | **Category** | `VCS` | `FICHE-MARKETPLACE.md` § 3 ; API `GET /api/tags` → `{"id":250,"name":"VCS","link":"/tag/250-vcs"}` | **Tag officiel** de la liste du Marketplace (170 entrées). |
 | 13 | **Keywords / mots-clés** | `git` · `pickaxe` · `search` · `history` · `log` | consigne de la mère | ⚠ **Mesuré** : sur les 170 tags officiels (`GET /api/tags`), **seul `VCS` existe** ; `git`, `pickaxe`, `search`, `history`, `log` n'en font pas partie → à saisir comme **mots-clés libres** (champ texte), **pas** comme tags privilégiés. Bonus mesuré : `GET /api/searchPlugins?search=pickaxe` → **0 plugin** ⇒ le mot-clé est libre ; `search=commit history` → 151 plugins. |
-| 14 | **Compatible IDEs / since-build** | `262` — IntelliJ IDEA 2026.2 / PyCharm 2026.2.4 (build **262.11879.98**) | `plugin.xml` ligne 58 → `<idea-version since-build="262"/>` ; `product-info.json` de `/work/ide/pycharm-2026.2.4` | Aucune borne haute (`until-build` **absent**, volontaire : le plugin ne dépend que de `com.intellij.modules.platform`). Le plugin a été **compilé et chargé** sur PyCharm 2026.2.4. IntelliJ IDEA 2026.2 : **même build 262**, mais **non testé** (à dire tel quel si le formulaire demande une validation). |
+| 14 | **Compatible IDEs / since-build** | `243` — IntelliJ IDEA 2024.3 / PyCharm 2024.3 (build **243.21565.199**) | `plugin.xml` → `<idea-version since-build="243"/>` ; `product-info.json` de `/work/ide/pycharm-2024.3` | Aucune borne haute (`until-build` **absent**, volontaire : le plugin ne dépend que de `com.intellij.modules.platform`). Le plugin a été **chargé** dans PyCharm Community 2024.3 (build 243.21565.199) et le **Plugin Verifier officiel** y rend le verdict *« Compatible. 1 usage of deprecated API »* (0 problème de compatibilité). Il reste **compatible avec 2026.2** (le `since-build` est un minimum, pas une égalité). IntelliJ IDEA 2024.3 : **même build 243**, mais **non testé** (à dire tel quel si le formulaire demande une validation). |
 | 15 | **Price** | `Free` / **gratuit** (0 $) | `FICHE-MARKETPLACE.md` § 4 | Plugin gratuit : **aucun revenu**, **aucun lien de don** (`donationLinks = []`, production Gumroad arrêtée). |
 | 16 | **Release channel** | laisser le canal **par défaut** (publication publique) | — | Un canal custom (Alpha / Beta / EAP) n'est utile que pour ne pas publier largement ; à ne cocher que sur décision du propriétaire. |
 | 17 | **Hidden** | **décoché** (plugin visible) | — | La case « hidden » garde le plugin caché même après approbation. |
@@ -161,9 +161,9 @@ Chaque ligne = **la valeur EXACTE à saisir** + **le fichier local d'où elle vi
 3. **Remplir le formulaire** — reprendre les 20 lignes du § 1, dans l'ordre des champs.
    Les blocs longs (5 et 6) se collent tels quels, **sans retouche**.
 4. **Déposer le ZIP** — joindre `/work/pickaxe/build/distributions/FindinCommitHistory-0.0.1.zip`
-   (3 133 459 o). **Ne pas zipper, renommer ni re-compresser** le fichier.
+   (3 133 609 o). **Ne pas zipper, renommer ni re-compresser** le fichier.
 5. **Options de distribution** — prix `Free`, canal par défaut, **pas** de canal custom,
-   **hidden décoché**, **pas** d'ads, `since-build 262`, catégorie `VCS`,
+   **hidden décoché**, **pas** d'ads, `since-build 243`, catégorie `VCS`,
    mots-clés `git pickaxe search history log`, puis joindre les **3 captures** du § 3.
 6. **Soumettre pour relecture** — clic sur **« Submit »** / « Upload » ; le plugin part en
    relecture (statut `approve:false` / `listed:false` tant que JetBrains n'a pas validé).

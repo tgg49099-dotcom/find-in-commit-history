@@ -39,9 +39,9 @@ palette (`Ctrl+Shift+A` / `Cmd+Shift+A`).
 
 | | |
 |---|---|
-| IDE | IntelliJ Platform **2026.2+** (`since-build = 262`) |
+| IDE | IntelliJ Platform **2024.3+** (`since-build = 243`) |
 | Dependencies | `com.intellij.modules.platform` only — no dependency on a disableable plugin |
-| Java | 21 (bytecode), Gradle 8.10+ |
+| Java | 17 (bytecode), Gradle 8.10+ |
 
 ## Build
 
@@ -146,7 +146,10 @@ which has nothing to do with version control. JGit is therefore bundled, in the
   **Cancel** button really stops it — the engine checks the cancellation at
   every commit and at every diff entry — but the progress of a very large
   repository is not detailed.
-* The plugin has been verified on **PyCharm 2026.2.4**; it has not been tested on
+* The plugin has been verified on **PyCharm 2026.2.4** (compiled against it) and
+  on **PyCharm Community 2024.3** (`since-build 243`): the official JetBrains
+  Plugin Verifier returns *“Compatible. 1 usage of deprecated API”* there, and
+  the plugin is really loaded by that IDE. It has not been tested on
   IntelliJ IDEA (it only uses `com.intellij.modules.platform`, so nothing in the
   code is PyCharm-specific).
 
