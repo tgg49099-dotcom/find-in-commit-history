@@ -47,15 +47,20 @@
     </ul>
   ]]></change-notes>
 
-  <!-- Compatibilite : 262 = IntelliJ Platform 2026.2 (PyCharm 2026.2.4 =
-       build 262.11879.98, mesure dans product-info.json).
+  <!-- Compatibilite : since-build 243 = IntelliJ Platform 2024.3
+       (PyCharm Community 2024.3 = build 243.21565.199, mesure dans
+       product-info.json).
+       Le Plugin Verifier officiel de JetBrains rend sur cet IDE le verdict
+       "Compatible. 1 usage of deprecated API" (0 probleme de compatibilite).
+       Le plugin reste COMPILE contre PyCharm 2026.2.4 (build 262.11879.98) :
+       l'IDE de compilation n'est pas l'IDE de compatibilite.
        Aucune borne haute : le champ `pluginUntilBuild` a ete supprime de
        gradle.properties le 05/11/2026, donc l'attribut correspondant est
        absent du XML genere. Le plugin ne depend que de
        `com.intellij.modules.platform`, dont l'API publique n'a pas bouge
        depuis 2024.3 : une borne haute serait une restriction sans
        raison mesurable. -->
-  <idea-version since-build="262"/>
+  <idea-version since-build="243"/>
 
   <depends>com.intellij.modules.platform</depends>
 
