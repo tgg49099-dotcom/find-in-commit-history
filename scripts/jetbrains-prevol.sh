@@ -471,6 +471,53 @@ for root, dirs, files in os.walk(parent or "/work"):
             existants.add(h.hexdigest())
         except OSError:
             pass
+# 06/11/2026 13:45 (cycle 134) : le PAQUET de livraison est citable.
+# Origine : le cycle 133 a reconstruit /work/pickaxe-soumission/dossier-pickaxe.zip (le paquet que
+# Tgg recoit : ZIP du plugin + LISEZMOI + MISE-VENTE + captures) et a cite son md5 dans
+# /rapports/rapport.md et /rapports/etat.json. Le controle des md5 le REFUSAIT : le scan des
+# fichiers existants saute les .zip (regle du 04/11 12:10 : "seul le ZIP livre est citable, pas
+# les autres ZIP du depot"), et le paquet n'est ni le ZIP livre ni un fichier a l'interieur de
+# celui-ci. Resultat : le pre-vol sortait ROUGE sur un paquet parfaitement correct.
+# REGLE : un fichier ZIP est citable SI ET SEULEMENT SI il CONTIENT le ZIP livre (md5 reel).
+# C'est verifiable tout seul, sans liste de fichiers a maintenir : le paquet porte le fichier
+# que Tgg va telecharger ; un ZIP perime (0.0.19, 0.0.21) ne le contient pas et reste refuse.
+# Contre-epreuve : scripts/contre_epreuve_prevol_md5.sh (paquet accepte ; ZIP ancien refuse ;
+# md5 inconnu refuse).
+taille_zip_livre = os.path.getsize(zip_ref)
+for root, dirs, files in os.walk(parent or "/work"):
+    dirs[:] = [x for x in dirs if x not in SAUT_EXIST and not x.startswith(".")]
+    for f in files:
+        if not f.lower().endswith(".zip"):
+            continue
+        p = os.path.join(root, f)
+        try:
+            if os.path.getsize(p) > 64 * 1024 * 1024:
+                continue
+            porte_le_livre = False
+            with zipfile.ZipFile(p) as zp:
+                for n in zp.namelist():
+                    if n.endswith("/"):
+                        continue
+                    try:
+                        info = zp.getinfo(n)
+                    except Exception:
+                        continue
+                    if info.file_size != taille_zip_livre:
+                        continue
+                    try:
+                        h = hashlib.md5()
+                        with zp.open(n) as fh:
+                            for b in iter(lambda: fh.read(1 << 20), b""):
+                                h.update(b)
+                        if h.hexdigest() == reel:
+                            porte_le_livre = True
+                            break
+                    except Exception:
+                        continue
+            if porte_le_livre:
+                legitimes.add(md5(p))
+        except Exception:
+            continue
 vus = set()
 for p in sorted(set(docs)):
     try:
