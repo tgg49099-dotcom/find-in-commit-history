@@ -25,9 +25,9 @@ autre chose que ce qui est mesuré.
 
 | | Valeur attendue | Vérification |
 |---|---|---|
-| Le ZIP livré | md5 `00f2bc2495fcd34b7a46cc9da5e8a8d4` · sha256 `9687a8551e4d4147558c772d34b9bffd888303921b12cac8e94ab45a415578d9` · 3 133 212 o | `cd /work/pickaxe && sha256sum -c SHA256.txt && md5sum build/distributions/FindinCommitHistory-0.0.1.zip` |
+| Le ZIP livré | md5 `25d82c71a9782c0798cbd2c27c0be242` · sha256 `8e657c0c2e8b36034cb83767ed9fe53be32abd2d5d564bac4be4326ba66720a1` · 3 133 459 o (reconstruit le 06/11/2026 02:52 : correction de l'ordre des résultats) | `cd /work/pickaxe && sha256sum -c SHA256.txt && md5sum build/distributions/FindinCommitHistory-0.0.1.zip` |
 | Le numéro numérique | `<ID>` (attribué par le Marketplace à l'upload) | `GET https://plugins.jetbrains.com/api/vendors/tgg-labs/plugins` → le champ `id` de l'entrée `com.tgglabs.pickaxe` |
-| Le commit du CODE dans le dépôt public | `1dbbcb0eb9b9efc55e42a3f8f17760b7af3eb9ef` (67 fichiers ; des commits de documentation peuvent être au-dessus) | `GET https://api.github.com/repos/tgg49099-dotcom/find-in-commit-history/commits?per_page=1` |
+| Le commit du CODE dans le dépôt public | `d5da65779adf50ef1ccba809a9878399a68c20ff` (70 fichiers ; des commits de documentation peuvent être au-dessus) | `GET https://api.github.com/repos/tgg49099-dotcom/find-in-commit-history/commits?per_page=1` |
 
 ---
 
