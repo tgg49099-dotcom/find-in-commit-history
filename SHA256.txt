@@ -1,3 +1,43 @@
+# =========================================================================
+# VERSION COURANTE LIVREE = 0.0.3 — 07/11/2026 (c'est celle-ci qu'on televerse)
+# =========================================================================
+# Plugin      : Find in Commit History (id com.tgglabs.pickaxe), version 0.0.3
+# Fichier     : build/distributions/FindinCommitHistory-0.0.3.zip
+# Taille      : 3 162 831 octets
+# Construit le: 2026-11-07 01:55 (CET), scripts/build_zip.sh (0 telechargement,
+#               0 $), compile contre l'IDE local PyCharm 2026.2.4 (build 262.11879.98)
+#
+# Contenu : les 4 CORRECTIFS DU JURY (tache modale + annulation explicite a la
+# fermeture du dialogue, bouton Search desactive pendant la recherche, tri
+# applique AVANT la coupe a 500, getAuthorTimeMillis renomme en
+# getAuthorTimestampMillis) + les 2 ICONES 40x40 du Marketplace
+# (pluginIcon.svg, pluginIcon_dark.svg) dans le jar du plugin.
+# 3 jars : plugin, JGit 6.10.1, JavaEWAH 1.1.12 — aucun slf4j, aucun .lic.
+# Suite de tests de ce build : **92 tests, 92 verts**.
+# Contre-epreuve rouge des 4 correctifs : 4/4 « PREUVE ROUGE VALIDEE ».
+# 2 constructions successives : md5 et sha256 IDENTIQUES (ZIP reproductible).
+#
+# ATTENTION : la version ECRITE dans plugin.xml est `2026.1.0` (et non 0.0.3) :
+# pour un plugin vendu par le Marketplace, `<version>` doit correspondre au
+# `release-version` du <product-descriptor> (2026.1.0 <-> 20261). Le nom du
+# ZIP reste celui que le build donne : FindinCommitHistory-0.0.3.zip.
+#
+# Contenu du descripteur de produit (verifie DANS le ZIP livre) :
+#   <product-descriptor code="PPICKAXEPRO"
+#                       release-date="20261106"
+#                       release-version="20261"
+#                       optional="true"/>
+#   <version>2026.1.0</version>   et   <idea-version since-build="243"/>
+#
+# md5    : 217b1933579b9664985e938f26e62a78
+# sha256 : fbb24e1e0952c1b9f5c364c286f27f52510b327121a429ac9093c6b4856bafc9
+# taille : 3 162 831 octets
+# =========================================================================
+fbb24e1e0952c1b9f5c364c286f27f52510b327121a429ac9093c6b4856bafc9  build/distributions/FindinCommitHistory-0.0.3.zip
+
+# md5 (32 hex) — commenter pour que « sha256sum -c SHA256.txt » n'affiche aucun avertissement :
+# 217b1933579b9664985e938f26e62a78
+
 # SHA256.txt — EMPREINTES DU ZIP LIVRÉ (source de vérité unique)
 #
 # Plugin      : Find in Commit History (id com.tgglabs.pickaxe), version 0.0.1

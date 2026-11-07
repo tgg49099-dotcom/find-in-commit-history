@@ -9,18 +9,18 @@ public final class PickaxeHit {
     private final String commitId;
     private final String subject;
     private final String authorName;
-    private final long authorTimeMillis;
+    private final long authorTimestampMillis;
     private final List<String> paths;
 
     public PickaxeHit(String commitId,
                       String subject,
                       String authorName,
-                      long authorTimeMillis,
+                      long authorTimestampMillis,
                       List<String> paths) {
         this.commitId = commitId;
         this.subject = subject;
         this.authorName = authorName;
-        this.authorTimeMillis = authorTimeMillis;
+        this.authorTimestampMillis = authorTimestampMillis;
         this.paths = Collections.unmodifiableList(paths);
     }
 
@@ -43,8 +43,18 @@ public final class PickaxeHit {
         return authorName;
     }
 
-    public long getAuthorTimeMillis() {
-        return authorTimeMillis;
+    /**
+     * L'horodatage du commit, en millisecondes depuis l'epoque.
+     *
+     * <p>Attention : c'est la date du COMMITTEUR ({@code commit.getCommitTime()},
+     * celle que {@code git log} affiche et sur laquelle le moteur trie), et
+     * non la date de l'auteur. Le nom de l'auteur est donne par
+     * {@link #getAuthorName()}.</p>
+     *
+     * <p>Renommee le 06/11/2026 (jury : « nom trompeur, renommer »).</p>
+     */
+    public long getAuthorTimestampMillis() {
+        return authorTimestampMillis;
     }
 
     /** Les chemins de fichiers qui ont declenche la correspondance. */

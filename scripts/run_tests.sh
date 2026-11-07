@@ -110,7 +110,11 @@ find "$ROOT/src/main/java/com/tgglabs/pickaxe/pro" -name "*.java" >> "$BUILD/mai
 # HashClipboard est la SEULE classe de l'interface compilee hors IDE : elle
 # ne depend que de l'engine (aucune API de la plateforme), ce qui permet de
 # tester la fonction « double-clic = copier le hash » sans lancer l'IDE.
+# RechercheEnCours est dans le meme cas : elle porte les deux regles
+# d'ergonomie du dialogue (une seule recherche a la fois, annulation
+# explicite) sans dependre de la plateforme.
 echo "$ROOT/src/main/java/com/tgglabs/pickaxe/ui/HashClipboard.java" >> "$BUILD/main-sources.txt"
+echo "$ROOT/src/main/java/com/tgglabs/pickaxe/ui/RechercheEnCours.java" >> "$BUILD/main-sources.txt"
 "$JAVAC" -encoding UTF-8 --release 17 -nowarn -cp "$CP" -d "$BUILD/classes" \
     @"$BUILD/main-sources.txt"
 if [ $? -ne 0 ]; then

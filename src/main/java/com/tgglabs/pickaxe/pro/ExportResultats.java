@@ -59,7 +59,7 @@ public final class ExportResultats {
         out.append("hash,date,author,subject,paths\n");
         for (PickaxeHit hit : hits) {
             out.append(csv(hit.getCommitId())).append(',')
-                    .append(csv(dateIso(hit.getAuthorTimeMillis()))).append(',')
+                    .append(csv(dateIso(hit.getAuthorTimestampMillis()))).append(',')
                     .append(csv(hit.getAuthorName())).append(',')
                     .append(csv(hit.getSubject())).append(',')
                     .append(csv(String.join(" | ", hit.getPaths())))
@@ -75,7 +75,7 @@ public final class ExportResultats {
         out.append("|---|---|---|---|---|\n");
         for (PickaxeHit hit : hits) {
             out.append("| ").append(md(hit.getShortId())).append(" | ")
-                    .append(md(dateIso(hit.getAuthorTimeMillis()))).append(" | ")
+                    .append(md(dateIso(hit.getAuthorTimestampMillis()))).append(" | ")
                     .append(md(hit.getAuthorName())).append(" | ")
                     .append(md(hit.getSubject())).append(" | ")
                     .append(md(String.join(", ", hit.getPaths()))).append(" |\n");

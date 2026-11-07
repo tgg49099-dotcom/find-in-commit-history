@@ -158,8 +158,8 @@ class ChronologicalOrderTest {
             assertTrue(hits.size() >= 4,
                     "les 4 commits qui ajoutent la chaine doivent etre trouves : " + hits);
             for (int i = 1; i < hits.size(); i++) {
-                long previous = hits.get(i - 1).getAuthorTimeMillis();
-                long current = hits.get(i).getAuthorTimeMillis();
+                long previous = hits.get(i - 1).getAuthorTimestampMillis();
+                long current = hits.get(i).getAuthorTimestampMillis();
                 assertTrue(previous > current,
                         "les horodatages doivent etre decroissants : " + hits.get(i - 1)
                                 + " (" + previous + ") avant " + hits.get(i) + " (" + current + ")");

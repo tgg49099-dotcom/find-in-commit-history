@@ -113,8 +113,15 @@ PLUGIN_JAR="$BUILD/$NAME-$VERSION.jar"
 rm -f "$PLUGIN_JAR"
 ( cd "$BUILD/classes" && "$JAR_TOOL" --create $JAR_DATE_OPT --file "$PLUGIN_JAR" . ) \
     || { echo "ECHEC : creation du jar" >&2; exit 1; }
-"$JAR_TOOL" --update $JAR_DATE_OPT --file "$PLUGIN_JAR" -C "$ROOT/src/main/resources" META-INF/plugin.xml \
-    || { echo "ECHEC : ajout du plugin.xml dans le jar" >&2; exit 1; }
+# Les 2 ICONES du Marketplace (pluginIcon.svg / pluginIcon_dark.svg, 40x40 SVG)
+# doivent etre DANS le jar : sans elles, la fiche du plugin s'affiche avec
+# l'icone par defaut de JetBrains. Defaut d'emballage constate au cycle 143,
+# corrige au cycle 144 (07/11/2026).
+"$JAR_TOOL" --update $JAR_DATE_OPT --file "$PLUGIN_JAR" \
+    -C "$ROOT/src/main/resources" META-INF/plugin.xml \
+    -C "$ROOT/src/main/resources" META-INF/pluginIcon.svg \
+    -C "$ROOT/src/main/resources" META-INF/pluginIcon_dark.svg \
+    || { echo "ECHEC : ajout du plugin.xml / des icones dans le jar" >&2; exit 1; }
 echo "jar du plugin : $PLUGIN_JAR ($(stat -c%s "$PLUGIN_JAR") octets)"
 echo "--- contenu du jar ---"
 "$JAR_TOOL" --list --file "$PLUGIN_JAR" | sed 's/^/    /'
@@ -176,6 +183,20 @@ echo "--- nombre de jars dans lib/ (attendu : 3) ---"
 NB=$(unzip -l "$ZIP" | grep -c "\.jar$")
 echo "    $NB jar(s)"
 [ "$NB" -eq 3 ] || { echo "    ECHEC : attendu 3 jars"; STATUS=1; }
+
+echo "--- icones du Marketplace DANS le jar du plugin ? ---"
+rm -rf "$BUILD/iconcheck"; mkdir -p "$BUILD/iconcheck"
+( cd "$BUILD/iconcheck" && unzip -q -o "$ZIP" "$NAME/lib/$NAME-$VERSION.jar" )
+( cd "$BUILD/iconcheck" && "$JAR_TOOL" --extract --file "$NAME/lib/$NAME-$VERSION.jar" \
+    META-INF/pluginIcon.svg META-INF/pluginIcon_dark.svg ) >/dev/null 2>&1
+for ICON in pluginIcon.svg pluginIcon_dark.svg; do
+    if [ -f "$BUILD/iconcheck/META-INF/$ICON" ]; then
+        echo "    OK : $ICON est dans le jar du plugin"
+    else
+        echo "    ECHEC : $ICON est ABSENT du jar du plugin"
+        STATUS=1
+    fi
+done
 
 echo "--- plugin.xml : version et descripteur de produit (0.0.2 payante) ? ---"
 # Le ZIP livre doit porter le descripteur de produit du modele freemium :

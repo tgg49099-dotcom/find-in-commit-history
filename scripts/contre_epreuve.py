@@ -152,6 +152,18 @@ def main() -> int:
     locator = WORK / "src" / "main" / "java" / "com" / "tgglabs" / "pickaxe" / "GitRepositoryLocator.java"
     if locator.exists():
         main_sources.append(locator)
+    # Les classes de l'interface compilees HORS IDE (elles ne dependent que
+    # du moteur) : sans elles, leurs tests ne compilent pas. Cf.
+    # run_tests.sh, qui fait de meme.
+    for extra_ui in ("ui/HashClipboard.java", "ui/RechercheEnCours.java"):
+        chemin = WORK / "src" / "main" / "java" / "com" / "tgglabs" / "pickaxe" / extra_ui
+        if chemin.exists():
+            main_sources.append(chemin)
+    # Le paquet `pro` (fonctions Pro, etat de licence) ne depend QUE de Java
+    # et du moteur : il est compile et teste HORS IDE, comme le moteur. Sans
+    # lui, les tests Pro (FonctionsProTest, ProDiversTest...) ne compilent
+    # pas. Cf. run_tests.sh, qui fait de meme.
+    main_sources += sorted((WORK / "src" / "main" / "java" / "com" / "tgglabs" / "pickaxe" / "pro").glob("*.java"))
     test_sources = sorted((WORK / "src" / "test" / "java").rglob("*.java"))
 
     def compile_many(sources, out, extra_cp):

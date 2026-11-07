@@ -24,8 +24,10 @@ import org.eclipse.jgit.util.io.NullOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.function.BooleanSupplier;
 import java.util.regex.Pattern;
 
@@ -53,6 +55,28 @@ public final class PickaxeEngine {
 
     /** Taille maximale d'un blob lu en memoire (garde-fou). */
     private static final long MAX_BLOB_BYTES = 64L * 1024 * 1024;
+
+    /**
+     * Ordre de la file de priorite : le PLUS ANCIEN en tete — c'est donc lui
+     * qui sort quand la file est pleine.
+     *
+     * <p>A date egale, c'est le rang de parcours le PLUS GRAND qui passe
+     * devant : l'ordre d'affichage est « date decroissante, puis rang
+     * croissant » (le tri stable de {@link List#sort}), donc le plus mauvais
+     * des resultats retenus est, a date egale, celui qui est arrive le
+     * dernier dans le parcours. C'est lui qui doit sortir — sinon la file
+     * ne contiendrait pas exactement les `maxResults` premiers resultats du
+     * tri complet.</p>
+     */
+    private static final Comparator<HitRange> PAR_ORDRE_ANTICIPATION =
+            Comparator.comparingLong((HitRange h) -> h.hit.getAuthorTimestampMillis())
+                    .thenComparing(Comparator.comparingInt((HitRange h) -> h.rang).reversed());
+
+    /** Ordre d'AFFICHAGE : du plus recent au plus ancien (rang croissant a egalite). */
+    private static final Comparator<HitRange> PAR_ORDRE_AFFICHE =
+            Comparator.comparingLong((HitRange h) -> h.hit.getAuthorTimestampMillis())
+                    .reversed()
+                    .thenComparingInt(h -> h.rang);
 
     private final Repository repository;
 
@@ -110,7 +134,25 @@ public final class PickaxeEngine {
         final boolean chercherDansLesMessages = portee != PorteeRecherche.DIFFS;
         final boolean chercherDansLesDiffs = portee != PorteeRecherche.MESSAGES;
 
-        final List<PickaxeHit> hits = new ArrayList<>();
+        // LA COUPE APRES LE TRI (correction du jury du 06/11/2026, point 3).
+        //
+        // Le parcours de JGit est TOPOLOGIQUE (un commit est rendu avant ses
+        // enfants, comme `git log`), et cet ordre n'est PAS un ordre par date
+        // quand les dates sont dans le desordre (decalage d'horloge,
+        // cherry-pick, rebase...). Couper au bout de `maxResults` resultats
+        // DANS ce parcours gardait donc des commits arbitraires : un commit
+        // RECENT pouvait manquer, alors que la fiche publique promet
+        // « most recent first ».
+        //
+        // On collecte donc TOUS les resultats, on les TRIE par date, et on ne
+        // garde ensuite que les `maxResults` plus recents. Pour ne pas tout
+        // garder en memoire, une file de priorite BORNEE ne retient que ces
+        // `maxResults` resultats, dans l'ordre exact qu'un tri complet
+        // donnerait.
+        final int maxResults = query.getMaxResults();
+        final PriorityQueue<HitRange> retenus = new PriorityQueue<>(
+                Math.min(1024, Math.max(1, maxResults)), PAR_ORDRE_ANTICIPATION);
+        int rang = 0;
         try (RevWalk walk = new RevWalk(repository);
              DiffFormatter formatter = new DiffFormatter(NullOutputStream.INSTANCE)) {
             formatter.setRepository(repository);
@@ -147,13 +189,24 @@ public final class PickaxeEngine {
             markStartPoints(walk);
 
             for (RevCommit commit : walk) {
-                if (hits.size() >= query.getMaxResults()) {
-                    break;
-                }
                 // Annulation : on verifie AVANT chaque commit, pour que le
                 // parcours d'un gros historique s'arrete aussitot.
                 if (cancelled.getAsBoolean()) {
                     break;
+                }
+                // OPTIMISATION (meme resultat, moins de lecture) : quand la
+                // file est pleine, un commit STRICTEMENT plus ancien que le
+                // plus ancien resultat retenu ne peut PAS entrer dans les
+                // `maxResults` plus recents : les `maxResults` resultats
+                // deja trouves sont tous plus recents que lui. On n'ouvre
+                // donc pas son diff (c'est la lecture des blobs qui est
+                // couteuse). A date EGALE, on n'omet rien : le commit
+                // nouveau est plus recent dans l'ordre stable et remplacerait
+                // alors le plus ancien.
+                final long dateCommit = commit.getCommitTime() * 1000L;
+                if (retenus.size() >= maxResults
+                        && dateCommit < retenus.peek().hit.getAuthorTimestampMillis()) {
+                    continue;
                 }
                 List<String> matchedPaths = chercherDansLesDiffs
                         ? matchingPaths(commit, walk, formatter, query, needleBytes, pathPattern, regex)
@@ -178,12 +231,17 @@ public final class PickaxeEngine {
                     retenu = toucheUnCheminDuFiltre(commit, walk, formatter, pathPattern);
                 }
                 if (retenu) {
-                    hits.add(new PickaxeHit(
+                    retenus.add(new HitRange(new PickaxeHit(
                             commit.getName(),
                             commit.getFullMessage().split("\n", 2)[0].trim(),
                             commit.getAuthorIdent() == null ? "" : commit.getAuthorIdent().getName(),
-                            commit.getCommitTime() * 1000L,
-                            matchedPaths));
+                            dateCommit,
+                            matchedPaths), rang++));
+                    if (retenus.size() > maxResults) {
+                        // Le plus ancien sort : il est deja dans les
+                        // `maxResults` plus recents trouves jusqu'ici.
+                        retenus.poll();
+                    }
                 }
             }
         } catch (IOException e) {
@@ -199,8 +257,37 @@ public final class PickaxeEngine {
         // commit (la date du COMMITTEUR, celle que JGit affiche et que
         // `git log` utilise pour son ordre par defaut). Le tri est STABLE :
         // entre deux commits de meme date, l'ordre du parcours est conserve.
-        hits.sort((a, b) -> Long.compare(b.getAuthorTimeMillis(), a.getAuthorTimeMillis()));
+        //
+        // La COUPE a `maxResults` vient APRES ce tri (et non pendant le
+        // parcours) : c'est la correction du jury du 06/11/2026.
+        final List<HitRange> liste = new ArrayList<>(retenus);
+        liste.sort(PAR_ORDRE_AFFICHE);
+        final List<PickaxeHit> hits = new ArrayList<>(liste.size());
+        for (HitRange element : liste) {
+            hits.add(element.hit);
+        }
         return hits;
+    }
+
+    /**
+     * Un resultat et son rang de parcours.
+     *
+     * <p>Le rang sert de depart en cas d'egalite de date : il rend le tri
+     * final STABLE, comme l'etait le tri par {@code List.sort} sur la liste
+     * complete avant la correction.</p>
+     */
+    private static final class HitRange {
+
+        /** Le resultat. */
+        private final PickaxeHit hit;
+
+        /** Son rang dans le parcours de l'historique. */
+        private final int rang;
+
+        HitRange(PickaxeHit hit, int rang) {
+            this.hit = hit;
+            this.rang = rang;
+        }
     }
 
     /**

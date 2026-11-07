@@ -1,7 +1,5 @@
 package com.tgglabs.pickaxe.ui;
 
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.fileChooser.FileChooserFactory;
 import com.intellij.openapi.fileChooser.FileSaverDescriptor;
 import com.intellij.openapi.ide.CopyPasteManager;
@@ -72,8 +70,9 @@ import java.util.function.BooleanSupplier;
  *
  * <p>Regle de fluidite : la recherche ne doit jamais tourner sur le thread
  * EDT (celui de Swing). Sur un gros depot elle gelerait l'IDE. Elle est donc
- * confiee a une tache de fond, et son resultat est applique au modele dans
- * {@code invokeLater} (donc sur l'EDT).</p>
+ * confiee a une tache MODALE — sa fenetre de progression et son bouton
+ * « Cancel » sont visibles au-dessus du dialogue — et son resultat est
+ * applique au modele dans {@code onSuccess()} (donc sur l'EDT).</p>
  *
  * <p>Copie du hash : un double-clic dans la liste des resultats — ou le
  * bouton « Copy hash » — met le hash du commit selectionne dans le
@@ -110,6 +109,16 @@ public class PickaxeDialog extends DialogWrapper {
             new JBCheckBox("All repositories of the project (Pro)");
     private final JBList<String> resultList = new JBList<>();
     private final JBLabel statusLabel = new JBLabel(" ");
+
+    /**
+     * L'etat de la recherche en cours : une seule a la fois, et annulable
+     * explicitement (fermeture du dialogue).
+     *
+     * <p>Cette classe ne depend QUE de Java : les deux regles qu'elle porte
+     * sont donc verifiables par des tests reels, hors IDE (cf.
+     * {@code RechercheEnCoursTest}).</p>
+     */
+    private final RechercheEnCours rechercheEnCours = new RechercheEnCours();
 
     /**
      * Les resultats de la DERNIERE recherche, dans l'ordre de la liste
@@ -301,10 +310,23 @@ public class PickaxeDialog extends DialogWrapper {
     /**
      * Lance la recherche.
      *
-     * <p>La lecture du depot est faite par une tache de fond
-     * ({@link Task.Backgroundable}) : l'EDT reste libre, l'IDE ne gele pas,
-     * et la tache affiche sa progression et peut etre annulee. Le resultat est
-     * applique au modele dans {@code invokeLater}, donc sur l'EDT.</p>
+     * <p>Deux corrections d'ergonomie du jury du 06/11/2026 :</p>
+     * <ul>
+     *   <li><b>Tache modale</b> : la lecture du depot est faite par une
+     *       tache MODALE : la fenetre de progression — et son bouton
+     *       « Cancel » — est visible AU-DESSUS du dialogue, donc
+     *       l'utilisateur voit ce qui se passe et peut arreter la recherche.
+     *       En plus, fermer le dialogue annule EXPLICITEMENT la recherche en
+     *       cours (voir {@link #dispose()}) : elle ne continue pas en
+     *       arriere-plan.</li>
+     *   <li><b>Bouton « Search » desactive pendant la recherche</b> : deux
+     *       clics lanceraient deux recherches concurrentes, dont la plus
+     *       lente ecraserait l'affichage. Le bouton est reactive a la fin,
+     *       dans TOUS les cas (succes, erreur, annulation).</li>
+     * </ul>
+     *
+     * <p>Le resultat est applique au modele dans {@code onSuccess()}, donc
+     * sur l'EDT, dans le bon etat de modalite.</p>
      *
      * <p>Ne leve jamais d'exception vers l'IDE.</p>
      */
@@ -314,61 +336,120 @@ public class PickaxeDialog extends DialogWrapper {
             setStatus(PickaxeQuery.EMPTY_NEEDLE_MESSAGE, true);
             return;
         }
+        // Une seule recherche a la fois : le bouton « Search » est desactive
+        // pendant une recherche, mais la touche ENTREE pourrait aussi
+        // relancer l'action. La garde est donc posee ICI aussi.
+        if (!rechercheEnCours.demarrer()) {
+            setStatus("A search is already running.", true);
+            return;
+        }
         // Les champs Swing sont lus ICI, sur l'EDT : un thread de fond n'a
         // pas le droit de les toucher.
         final PickaxeMode mode = (PickaxeMode) modeCombo.getSelectedItem();
         final String pathFilter = pathField.getText();
         final PorteeRecherche portee = porteeChoisie();
         final boolean tousLesDepots = allRepositoriesCheck.isSelected();
-        // Modalite capturee sur l'EDT : le resultat sera applique dans le meme
-        // etat de modalite (ce dialogue est modal).
-        final ModalityState modality = ModalityState.defaultModalityState();
 
         setStatus("Searching…", false);
-        ProgressManager.getInstance().run(new Task.Backgroundable(
-                project, "Searching Git history", true) {
-            @Override
-            public void run(@NotNull ProgressIndicator indicator) {
-                indicator.setIndeterminate(true);
-                final List<Entree> entrees;
-                try {
-                    // L'indicateur de la tache de fond est le signal
-                    // d'annulation : le moteur le teste a chaque commit et a
-                    // chaque entree de la boucle de diff. « Cancel » arrete
-                    // donc vraiment le parcours, au lieu de n'etre qu'un
-                    // decoratif.
-                    entrees = chercher(needle, mode, pathFilter, portee, tousLesDepots,
-                            indicator::isCanceled);
-                } catch (FonctionProRefuseeException ex) {
-                    // Fonction Pro sans licence : message clair, pas de crash.
-                    final String message = ex.getMessage();
-                    ApplicationManager.getApplication().invokeLater(() -> setStatus(message, true), modality);
-                    return;
-                } catch (PickaxeException ex) {
-                    final String message = ex.getMessage() == null ? "Search failed." : ex.getMessage();
-                    ApplicationManager.getApplication().invokeLater(() -> setStatus(message, true), modality);
-                    return;
-                } catch (RuntimeException ex) {
-                    // Filet de securite : l'IDE ne doit jamais voir une
-                    // exception brute issue d'une action utilisateur.
-                    final String message = "Search failed: " + ex.getClass().getSimpleName()
-                            + (ex.getMessage() == null ? "" : " — " + ex.getMessage());
-                    ApplicationManager.getApplication().invokeLater(() -> setStatus(message, true), modality);
-                    return;
-                }
-                if (indicator.isCanceled()) {
-                    // L'utilisateur a annule : le resultat est jete (onCancel()
-                    // met le message « Search cancelled. »).
-                    return;
-                }
-                ApplicationManager.getApplication().invokeLater(() -> showResults(entrees), modality);
-            }
+        setSearchEnabled(false);
+        try {
+            ProgressManager.getInstance().run(new Task.Modal(
+                    project, "Searching Git history", true) {
 
-            @Override
-            public void onCancel() {
-                setStatus("Search cancelled.", false);
-            }
-        });
+                /** Les resultats de la tache (nuls si annulee ou en erreur). */
+                private List<Entree> entrees;
+
+                /** Le message d'erreur, si la recherche a echoue. */
+                private String erreur;
+
+                @Override
+                public void run(@NotNull ProgressIndicator indicator) {
+                    // L'indicateur de la tache est le signal d'annulation :
+                    // le moteur le teste a chaque commit et a chaque entree
+                    // de la boucle de diff. « Cancel » arrete donc vraiment
+                    // le parcours, au lieu de n'etre qu'un decoratif. La
+                    // fermeture du dialogue passe par le meme chemin
+                    // (dispose() -> rechercheEnCours.annuler()).
+                    rechercheEnCours.brancherAnnulation(indicator::cancel);
+                    indicator.setIndeterminate(true);
+                    try {
+                        entrees = chercher(needle, mode, pathFilter, portee, tousLesDepots,
+                                indicator::isCanceled);
+                    } catch (FonctionProRefuseeException ex) {
+                        // Fonction Pro sans licence : message clair, pas de crash.
+                        erreur = ex.getMessage();
+                    } catch (PickaxeException ex) {
+                        erreur = ex.getMessage() == null ? "Search failed." : ex.getMessage();
+                    } catch (RuntimeException ex) {
+                        // Filet de securite : l'IDE ne doit jamais voir une
+                        // exception brute issue d'une action utilisateur.
+                        erreur = "Search failed: " + ex.getClass().getSimpleName()
+                                + (ex.getMessage() == null ? "" : " — " + ex.getMessage());
+                    }
+                    if (indicator.isCanceled()) {
+                        // L'utilisateur a annule : le resultat est jete
+                        // (onCancel() met le message « Search cancelled. »).
+                        entrees = null;
+                    }
+                }
+
+                @Override
+                public void onSuccess() {
+                    if (erreur != null) {
+                        setStatus(erreur, true);
+                        return;
+                    }
+                    if (entrees == null) {
+                        return;
+                    }
+                    showResults(entrees);
+                }
+
+                @Override
+                public void onCancel() {
+                    setStatus("Search cancelled.", false);
+                }
+
+                @Override
+                public void onThrowable(@NotNull Throwable error) {
+                    setStatus("Search failed: " + error.getMessage(), true);
+                }
+            });
+        } finally {
+            // Dans TOUS les cas (succes, erreur, annulation) : le bouton
+            // « Search » redevient actif, et une nouvelle recherche peut
+            // demarrer.
+            setSearchEnabled(true);
+            rechercheEnCours.terminer();
+        }
+    }
+
+    /**
+     * Active ou desactive le bouton « Search ».
+     *
+     * <p>L'action du bouton « Search » est l'action OK du dialogue (remplacee
+     * dans {@link #createDefaultActions()}) : la desactiver desactive donc
+     * aussi le lancement par la touche ENTREE.</p>
+     */
+    private void setSearchEnabled(boolean enabled) {
+        Action action = getOKAction();
+        if (action != null) {
+            action.setEnabled(enabled);
+        }
+    }
+
+    /**
+     * Fermer le dialogue ARRETE la recherche en cours.
+     *
+     * <p>L'annulation est explicite : l'indicateur de la tache est annule,
+     * et le moteur s'arrete au commit suivant — la recherche ne continue pas
+     * en arriere-plan, en consommant du CPU et en ecrivant dans un dialogue
+     * qui n'existe plus.</p>
+     */
+    @Override
+    protected void dispose() {
+        rechercheEnCours.annuler();
+        super.dispose();
     }
 
     /**

@@ -171,6 +171,13 @@ def main() -> int:
         hashclip = work / "src" / "main" / "java" / "com" / "tgglabs" / "pickaxe" / "ui" / "HashClipboard.java"
         if hashclip.exists():
             main_sources.append(hashclip)
+        # RechercheEnCours : meme cas (elle ne depend que du moteur).
+        recherche = work / "src" / "main" / "java" / "com" / "tgglabs" / "pickaxe" / "ui" / "RechercheEnCours.java"
+        if recherche.exists():
+            main_sources.append(recherche)
+        # Le paquet `pro` (fonctions Pro, etat de licence) ne depend QUE de
+        # Java et du moteur : il est compile et teste HORS IDE, comme le moteur.
+        main_sources += sorted((work / "src" / "main" / "java" / "com" / "tgglabs" / "pickaxe" / "pro").glob("*.java"))
         test_sources = sorted((work / "src" / "test" / "java").rglob("*.java"))
 
         def compile_many(sources, out, extra_cp):
@@ -243,6 +250,12 @@ def main() -> int:
     hashclip = work / "src" / "main" / "java" / "com" / "tgglabs" / "pickaxe" / "ui" / "HashClipboard.java"
     if hashclip.exists():
         main_sources.append(hashclip)
+    recherche = work / "src" / "main" / "java" / "com" / "tgglabs" / "pickaxe" / "ui" / "RechercheEnCours.java"
+    if recherche.exists():
+        main_sources.append(recherche)
+    # Le paquet `pro` (fonctions Pro, etat de licence) ne depend QUE de
+    # Java et du moteur : il est compile et teste HORS IDE, comme le moteur.
+    main_sources += sorted((work / "src" / "main" / "java" / "com" / "tgglabs" / "pickaxe" / "pro").glob("*.java"))
     test_sources = sorted((work / "src" / "test" / "java").rglob("*.java"))
 
     def compile_many2(sources, out, extra_cp):

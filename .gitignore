@@ -16,3 +16,11 @@ build-officiel.log
 # Bytecode Python des scripts (jamais dans le depot).
 __pycache__/
 *.pyc
+
+# Notes INTERNES de travail, volontairement hors du depot public (decision du
+# cycle 142) : elles decrivent les versions 0.0.1/0.0.2 (perimees) et
+# DOSSIER-PAID.md annonce encore 19 $/an au lieu des 29 $/an reels. Les
+# garder hors du depot evite de publier un prix faux. Ce ne sont pas du code.
+DESCRIPTION-0.0.2.md
+DOSSIER-0.0.2.md
+DOSSIER-PAID.md
